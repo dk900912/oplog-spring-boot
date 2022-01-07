@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.dk900912</groupId>
+    <artifactId>oplog-spring-boot</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.0</version>
+
+    <name>oplog-spring-boot</name>
+    <description>spring boot support for operation log</description>
+
+    <developers>
+        <developer>
+            <name>crimson_typhoon</name>
+            <email>1289615518@qq.com</email>
+        </developer>
+    </developers>
+
+    <modules>
+        <module>oplog-spring-boot-autoconfigure</module>
+        <module>oplog-spring-boot-starter</module>
+        <module>oplog-core</module>
+    </modules>
+
+    <properties>
+        <oplog.version>${project.version}</oplog.version>
+        <spring-boot.version>2.5.4</spring-boot.version>
+        <spring.version>5.3.9</spring.version>
+        <commons-lang3.version>3.8.1</commons-lang3.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.github.dk900912</groupId>
+                <artifactId>oplog-core</artifactId>
+                <version>${oplog.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.dk900912</groupId>
+                <artifactId>oplog-spring-boot-autoconfigure</artifactId>
+                <version>${oplog.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.dk900912</groupId>
+                <artifactId>oplog-spring-boot-starter</artifactId>
+                <version>${oplog.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-aop</artifactId>
+                <version>${spring.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
