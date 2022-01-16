@@ -22,9 +22,14 @@ public class LogRecord {
     private String operatorName;
 
     /**
-     * 被操作对象唯一标识，一般是业务对象的唯一标识，比如：订单ID、用户ID、商品ID等
+     * 被操作对象中文标识，比如：订单、用户、商品等
      */
     private String operationTarget;
+
+    /**
+     * 被操作对象的业务唯一标识，一般是业务对象的唯一标识，比如：订单ID、用户ID、商品ID等
+     */
+    private String bizNo;
 
     /**
      * 操作日志详情
@@ -73,6 +78,14 @@ public class LogRecord {
         this.operationTarget = operationTarget;
     }
 
+    public String getBizNo() {
+        return bizNo;
+    }
+
+    public void setBizNo(String bizNo) {
+        this.bizNo = bizNo;
+    }
+
     public String getOperationContent() {
         return operationContent;
     }
@@ -100,13 +113,12 @@ public class LogRecord {
     @Override
     public String toString() {
         return "LogRecord{" +
-                "operationLogId='" + operationLogId + '\'' +
-                ", operatorId='" + operatorId + '\'' +
+                "operatorId='" + operatorId + '\'' +
                 ", operatorName='" + operatorName + '\'' +
                 ", operationTarget='" + operationTarget + '\'' +
+                ", bizNo='" + bizNo + '\'' +
                 ", operationContent='" + operationContent + '\'' +
                 ", operationResult=" + operationResult +
-                ", operationTime=" + operationTime +
                 '}';
     }
 }

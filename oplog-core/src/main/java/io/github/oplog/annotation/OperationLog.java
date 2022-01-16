@@ -26,4 +26,9 @@ public @interface OperationLog {
      * 业务对象，如：订单、用户、商品等
      */
     String bizTarget();
+
+    /**
+     * 业务对象唯一标识
+     */
+    String bizNo();
 }

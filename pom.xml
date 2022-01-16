@@ -7,7 +7,7 @@
     <groupId>io.github.dk900912</groupId>
     <artifactId>oplog-spring-boot</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 
     <name>oplog-spring-boot</name>
     <description>spring boot support for operation log</description>
