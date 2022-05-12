@@ -1,7 +1,7 @@
 package io.github.dk900912.oplog.advisor.advice;
 
-import io.github.dk900912.oplog.LogRecord;
 import io.github.dk900912.oplog.BizCategory;
+import io.github.dk900912.oplog.LogRecord;
 import io.github.dk900912.oplog.Operator;
 import io.github.dk900912.oplog.annotation.OperationLog;
 import io.github.dk900912.oplog.persistence.LogRecordPersistenceService;
@@ -13,13 +13,24 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.util.CollectionUtils;
+import org.springframework.validation.BindingResult;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static io.github.dk900912.oplog.BizCategory.CREATE;
+import static io.github.dk900912.oplog.BizCategory.PLACE_ORDER;
 
 /**
  * @author dukui
@@ -30,6 +41,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
 
     private LogRecordPersistenceService logRecordPersistenceService;
 
+    // thread-safe
     private final ExpressionParser expressionParser;
 
     public OperationLogInterceptor() {
@@ -53,15 +65,25 @@ public class OperationLogInterceptor implements MethodInterceptor {
         }
 
         Method method = invocation.getMethod();
+        // The operationLogAnnotation will never be null
         Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
         Map<String, Object> operationLogAnnotationAttrMap = AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
+
         Operator operator = getOperator();
         BizCategory bizCategory =  (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
-        String bizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
-        String bizNo =  bizNoParser((String) operationLogAnnotationAttrMap.get("bizNo"), arguments);
-        String operation = String.format("%s %s %s，bizNo = %s", operator.getOperatorName(), bizCategory.getName(), bizTarget, bizNo);
-        LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, bizNo, operation, throwable);
-        logRecordPersistenceService.doLogRecordPersistence(logRecord);
+        String originBizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
+        String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
+        List<String> bizTargetList =  parseBizTarget(originBizTarget, arguments);
+        List<String> bizNoList =  parseBizNo(bizCategory, result, originBizNo, arguments);
+
+        for (int index = 0; index < bizNoList.size(); index ++) {
+            String bizTarget = bizTargetList.get(index);
+            String bizNo = bizNoList.get(index);
+            String operationLogContent = encapsulateOperationLogContent(operator, bizCategory, bizTarget, bizNo);
+            LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, bizNo, operationLogContent, throwable);
+
+            logRecordPersistenceService.doLogRecordPersistence(logRecord);
+        }
 
         // Rethrow the exception
         if (Objects.nonNull(throwable)) {
@@ -83,6 +105,18 @@ public class OperationLogInterceptor implements MethodInterceptor {
         return operatorService.getOperator();
     }
 
+    private String encapsulateOperationLogContent(Operator operator,
+                                                  BizCategory bizCategory,
+                                                  String bizTarget,
+                                                  String bizNo) {
+        return String.format("%s %s %s, bizNo = %s",
+                StringUtils.isNotEmpty(operator.getOperatorName()) ? operator.getOperatorName() : operator.getOperatorId(),
+                bizCategory.getName(),
+                bizTarget,
+                bizNo);
+
+    }
+
     private LogRecord encapsulateLogRecord(Operator operator,
                                           String bizTarget,
                                           String bizNo,
@@ -99,19 +133,76 @@ public class OperationLogInterceptor implements MethodInterceptor {
         return logRecord;
     }
 
-    private String bizNoParser(String bizNo, Object[] arguments) {
-        Expression bizNoExpression = expressionParser.parseExpression(bizNo);
-        String finalBizNo = null;
-        for (Object arg : arguments) {
+    private List<String> parseBizNo(BizCategory bizCategory, Object result, String bizNo, Object[] arguments) {
+        List<String> finalBizNoList = new ArrayList<>();
+        if (PLACE_ORDER.name().equals(bizCategory.getName())
+                || CREATE.name().equals(bizCategory.getName())) {
             try {
-                finalBizNo = bizNoExpression.getValue(arg, String.class);
-                if (StringUtils.isNotEmpty(finalBizNo)) {
+                finalBizNoList.addAll(parseSpelValue(bizNo, Arrays.asList(result)));
+            } catch (EvaluationException e) {
+                // Nothing to do
+            }
+        } else {
+            for (Object arg : arguments) {
+                if (arg instanceof BindingResult) {
+                    // Skip BindingResult
+                } else if (arg instanceof Collection<?>) {
+                    Collection<?> collection = (Collection<?>) arg;
+                    finalBizNoList.addAll(parseSpelValue(bizNo, new ArrayList<>(collection)));
+                } else if (arg instanceof String) {
+                    finalBizNoList.add(bizNo);
+                } else {
+                    finalBizNoList.addAll(parseSpelValue(bizNo, Collections.singletonList(arg)));
+                }
+                if (!CollectionUtils.isEmpty(finalBizNoList)) {
                     break;
+                }
+            }
+        }
+
+        return finalBizNoList;
+    }
+
+    private List<String> parseBizTarget(String bizTarget, Object[] arguments) {
+        List<String> finalBizTargetList = new ArrayList<>();
+        for (Object arg : arguments) {
+            if (arg instanceof BindingResult) {
+                // Skip BindingResult
+            } else if (arg instanceof Collection<?>) {
+                Collection<?> collection = (Collection<?>) arg;
+                finalBizTargetList.addAll(parseSpelValue(bizTarget, new ArrayList<>(collection)));
+            } else if (arg instanceof String) {
+                finalBizTargetList.add(bizTarget);
+            } else {
+                finalBizTargetList.addAll(parseSpelValue(bizTarget, Collections.singletonList(arg)));
+            }
+            if (!CollectionUtils.isEmpty(finalBizTargetList)) {
+                break;
+            }
+        }
+
+        return finalBizTargetList;
+    }
+
+    private List<String> parseSpelValue(String spel, List<?> rootObjList) {
+        List<String> spelValList= new ArrayList<>();
+        Expression expression = null;
+        try {
+            expression = expressionParser.parseExpression(spel);
+        } catch (ParseException e) {
+            return spelValList;
+        }
+        for (Object rootObj : rootObjList) {
+            try {
+                String finalSpelVal = expression.getValue(rootObj, String.class);
+                if (StringUtils.isNotEmpty(finalSpelVal)) {
+                    spelValList.add(finalSpelVal);
                 }
             } catch (EvaluationException e) {
                 // Nothing to do
             }
         }
-        return finalBizNo;
+
+        return spelValList;
     }
 }

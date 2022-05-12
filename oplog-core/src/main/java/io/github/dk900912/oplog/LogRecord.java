@@ -27,6 +27,11 @@ public class LogRecord {
     private String operationTarget;
 
     /**
+     * 业务操作类型
+     */
+    private BizCategory operationCategory;
+
+    /**
      * 被操作对象的业务唯一标识，一般是业务对象的唯一标识，比如：订单ID、用户ID、商品ID等
      */
     private String bizNo;
@@ -78,6 +83,14 @@ public class LogRecord {
         this.operationTarget = operationTarget;
     }
 
+    public BizCategory getOperationCategory() {
+        return operationCategory;
+    }
+
+    public void setOperationCategory(BizCategory operationCategory) {
+        this.operationCategory = operationCategory;
+    }
+
     public String getBizNo() {
         return bizNo;
     }
@@ -116,9 +129,10 @@ public class LogRecord {
                 "operatorId='" + operatorId + '\'' +
                 ", operatorName='" + operatorName + '\'' +
                 ", operationTarget='" + operationTarget + '\'' +
+                ", operationCategory=" + operationCategory +
                 ", bizNo='" + bizNo + '\'' +
-                ", operationContent='" + operationContent + '\'' +
                 ", operationResult=" + operationResult +
+                ", operationTime=" + operationTime +
                 '}';
     }
 }
