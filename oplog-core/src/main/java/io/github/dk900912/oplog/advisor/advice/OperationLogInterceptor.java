@@ -9,23 +9,20 @@ import io.github.dk900912.oplog.service.OperatorService;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.util.CollectionUtils;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -36,6 +33,8 @@ import static io.github.dk900912.oplog.BizCategory.PLACE_ORDER;
  * @author dukui
  */
 public class OperationLogInterceptor implements MethodInterceptor {
+
+    private static final String SPEL_PREFIX = "#";
 
     private OperatorService operatorService;
 
@@ -71,19 +70,12 @@ public class OperationLogInterceptor implements MethodInterceptor {
 
         Operator operator = getOperator();
         BizCategory bizCategory =  (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
-        String originBizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
+        String bizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
         String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
-        List<String> bizTargetList =  parseBizTarget(originBizTarget, arguments);
-        List<String> bizNoList =  parseBizNo(bizCategory, result, originBizNo, arguments);
-
-        for (int index = 0; index < bizNoList.size(); index ++) {
-            String bizTarget = bizTargetList.get(index);
-            String bizNo = bizNoList.get(index);
-            String operationLogContent = encapsulateOperationLogContent(operator, bizCategory, bizTarget, bizNo);
-            LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, bizNo, operationLogContent, throwable);
-
-            logRecordPersistenceService.doLogRecordPersistence(logRecord);
-        }
+        String bizNo =  parseBizNo(bizCategory, result, method, originBizNo, arguments);
+        String operationLogContent = encapsulateOperationLogContent(operator, bizCategory, bizTarget, bizNo);
+        LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, bizNo, operationLogContent, throwable);
+        logRecordPersistenceService.doLogRecordPersistence(logRecord);
 
         // Rethrow the exception
         if (Objects.nonNull(throwable)) {
@@ -133,76 +125,52 @@ public class OperationLogInterceptor implements MethodInterceptor {
         return logRecord;
     }
 
-    private List<String> parseBizNo(BizCategory bizCategory, Object result, String bizNo, Object[] arguments) {
-        List<String> finalBizNoList = new ArrayList<>();
-        if (PLACE_ORDER.name().equals(bizCategory.getName())
-                || CREATE.name().equals(bizCategory.getName())) {
-            try {
-                finalBizNoList.addAll(parseSpelValue(bizNo, Arrays.asList(result)));
-            } catch (EvaluationException e) {
-                // Nothing to do
-            }
+    private String parseBizNo(BizCategory bizCategory,
+                              Object result,
+                              Method method,
+                              String bizNo,
+                              Object[] arguments) {
+        if (StringUtils.isEmpty(bizNo) || !bizNo.startsWith(SPEL_PREFIX)) {
+            return bizNo;
+        }
+
+        String finalBizNo = null;
+        if (PLACE_ORDER.name().equals(bizCategory.name())
+                || CREATE.name().equals(bizCategory.name())) {
+            finalBizNo = parseSpelValue(bizNo, result);
         } else {
-            for (Object arg : arguments) {
+            for (int index = 0; index < arguments.length; index++) {
+                Object arg = arguments[index];
                 if (arg instanceof BindingResult) {
-                    // Skip BindingResult
+                    // Skip parse
                 } else if (arg instanceof Collection<?>) {
-                    Collection<?> collection = (Collection<?>) arg;
-                    finalBizNoList.addAll(parseSpelValue(bizNo, new ArrayList<>(collection)));
-                } else if (arg instanceof String) {
-                    finalBizNoList.add(bizNo);
+                    // Unsupported collection argument
                 } else {
-                    finalBizNoList.addAll(parseSpelValue(bizNo, Collections.singletonList(arg)));
+                    MethodParameter methodParameter = new MethodParameter(method, index);
+                    if (methodParameter.hasParameterAnnotation(RequestBody.class)) {
+                        finalBizNo = parseSpelValue(bizNo, arg);
+                        break;
+                    }
+                    finalBizNo = parseSpelValue(bizNo, arg);
                 }
-                if (!CollectionUtils.isEmpty(finalBizNoList)) {
+                if (StringUtils.isNotEmpty(finalBizNo)) {
                     break;
                 }
             }
         }
 
-        return finalBizNoList;
+        return finalBizNo;
     }
 
-    private List<String> parseBizTarget(String bizTarget, Object[] arguments) {
-        List<String> finalBizTargetList = new ArrayList<>();
-        for (Object arg : arguments) {
-            if (arg instanceof BindingResult) {
-                // Skip BindingResult
-            } else if (arg instanceof Collection<?>) {
-                Collection<?> collection = (Collection<?>) arg;
-                finalBizTargetList.addAll(parseSpelValue(bizTarget, new ArrayList<>(collection)));
-            } else if (arg instanceof String) {
-                finalBizTargetList.add(bizTarget);
-            } else {
-                finalBizTargetList.addAll(parseSpelValue(bizTarget, Collections.singletonList(arg)));
-            }
-            if (!CollectionUtils.isEmpty(finalBizTargetList)) {
-                break;
-            }
-        }
-
-        return finalBizTargetList;
-    }
-
-    private List<String> parseSpelValue(String spel, List<?> rootObjList) {
-        List<String> spelValList= new ArrayList<>();
-        Expression expression = null;
+    private String parseSpelValue(String spel, Object rootObj) {
+        String spelVal = null;
         try {
-            expression = expressionParser.parseExpression(spel);
-        } catch (ParseException e) {
-            return spelValList;
-        }
-        for (Object rootObj : rootObjList) {
-            try {
-                String finalSpelVal = expression.getValue(rootObj, String.class);
-                if (StringUtils.isNotEmpty(finalSpelVal)) {
-                    spelValList.add(finalSpelVal);
-                }
-            } catch (EvaluationException e) {
-                // Nothing to do
-            }
+            Expression expression = expressionParser.parseExpression(spel);
+            spelVal = expression.getValue(rootObj, String.class);
+        } catch (ParseException | EvaluationException e) {
+            // Nothing to do
         }
 
-        return spelValList;
+        return spelVal;
     }
 }

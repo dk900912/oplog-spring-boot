@@ -28,7 +28,7 @@ public @interface OperationLog {
     String bizTarget();
 
     /**
-     * 业务对象唯一标识
+     * 业务对象唯一标识；<br>支持 SpEL 表达式，但务必以 # 作为 SpEL 表达式的前缀</br>
      */
     String bizNo();
 }
