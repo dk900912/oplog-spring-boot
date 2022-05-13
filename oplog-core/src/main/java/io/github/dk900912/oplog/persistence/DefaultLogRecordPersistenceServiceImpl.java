@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 组件提供的默认实现：将操作日志输出到日志文件中。大家可以实现不同的持久化逻辑，比如：MySQL 和 ElasticSearch
+ *
  * @author dukui
  */
 public class DefaultLogRecordPersistenceServiceImpl implements LogRecordPersistenceService {
@@ -15,7 +17,7 @@ public class DefaultLogRecordPersistenceServiceImpl implements LogRecordPersiste
      */
     @Override
     public void doLogRecordPersistence(LogRecord logRecord) {
-        if (logger.isInfoEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.info("操作日志 = {}", logRecord);
         }
     }

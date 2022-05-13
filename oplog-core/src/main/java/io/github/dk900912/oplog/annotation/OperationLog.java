@@ -1,6 +1,7 @@
 package io.github.dk900912.oplog.annotation;
 
 import io.github.dk900912.oplog.BizCategory;
+import org.springframework.stereotype.Controller;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -10,6 +11,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 该注解建议用于 {@link Controller} 中的方法
+ *
  * @author dukui
  */
 @Target(ElementType.METHOD)
@@ -18,7 +21,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface OperationLog {
     /**
-     * 操作种类：新增、更新和删除
+     * 操作种类：新增、更新和删除等
      */
     BizCategory bizCategory();
 
@@ -28,7 +31,7 @@ public @interface OperationLog {
     String bizTarget();
 
     /**
-     * 业务对象唯一标识；<br>支持 SpEL 表达式，但务必以 # 作为 SpEL 表达式的前缀</br>
+     * 业务对象唯一标识；支持 SpEL 表达式，但务必以 # 作为 SpEL 表达式的前缀
      */
     String bizNo();
 }

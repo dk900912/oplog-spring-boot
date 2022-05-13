@@ -7,6 +7,8 @@ import io.github.dk900912.oplog.LogRecord;
  */
 public interface LogRecordPersistenceService {
     /**
+     * 持久化操作日志
+     *
      * @param logRecord 操作日志实体
      */
     public void doLogRecordPersistence(LogRecord logRecord);

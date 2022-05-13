@@ -15,8 +15,8 @@ public class OperationLogPointcutAdvisor extends AbstractBeanFactoryPointcutAdvi
     }
 
     /**
-     * @param pointcut Core Spring pointcut abstraction.
-     * @param advice   Tag interface for Advice. Implementations can be any type of advice, such as Interceptors.
+     * @param pointcut 切入点
+     * @param advice   通知，即切面中的拦截逻辑
      */
     public OperationLogPointcutAdvisor(Pointcut pointcut, Advice advice) {
         this.pointcut = pointcut;

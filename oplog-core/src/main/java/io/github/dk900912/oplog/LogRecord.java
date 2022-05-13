@@ -27,7 +27,7 @@ public class LogRecord {
     private String operationTarget;
 
     /**
-     * 业务操作类型
+     * 业务操作类型，比如：订购、退订等
      */
     private BizCategory operationCategory;
 

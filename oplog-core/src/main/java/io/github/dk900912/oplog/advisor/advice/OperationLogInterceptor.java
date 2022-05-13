@@ -8,21 +8,20 @@ import io.github.dk900912.oplog.persistence.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperatorService;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.core.MethodParameter;
+import org.springframework.context.expression.MethodBasedEvaluationContext;
+import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
@@ -35,11 +34,12 @@ import static io.github.dk900912.oplog.BizCategory.PLACE_ORDER;
 public class OperationLogInterceptor implements MethodInterceptor {
 
     private static final String SPEL_PREFIX = "#";
+    // thread-safe
+    private static final LocalVariableTableParameterNameDiscoverer PARAMETER_NAME_DISCOVERER = new LocalVariableTableParameterNameDiscoverer();
 
     private OperatorService operatorService;
 
     private LogRecordPersistenceService logRecordPersistenceService;
-
     // thread-safe
     private final ExpressionParser expressionParser;
 
@@ -48,9 +48,9 @@ public class OperationLogInterceptor implements MethodInterceptor {
     }
 
     /**
-     * @param invocation  A method invocation is a joinpoint and can be intercepted by a method interceptor.
-     * @return            The result of target method's invocation
-     * @throws Throwable  Exception
+     * @param invocation  连接点，Spring AOP 在连接点周围维护了连接器链
+     * @return            返回目标方法执行的结果
+     * @throws Throwable  目标方法执行过程中所抛出的异常
      */
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
@@ -64,7 +64,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
         }
 
         Method method = invocation.getMethod();
-        // The operationLogAnnotation will never be null
+        // operationLogAnnotation 不可能是 null，只能进入了当前方法中，那么目标方法一定是由 @OperationLog 注解标注
         Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
         Map<String, Object> operationLogAnnotationAttrMap = AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
 
@@ -74,10 +74,10 @@ public class OperationLogInterceptor implements MethodInterceptor {
         String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
         String bizNo =  parseBizNo(bizCategory, result, method, originBizNo, arguments);
         String operationLogContent = encapsulateOperationLogContent(operator, bizCategory, bizTarget, bizNo);
-        LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, bizNo, operationLogContent, throwable);
+        LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, bizCategory, bizNo, operationLogContent, throwable);
         logRecordPersistenceService.doLogRecordPersistence(logRecord);
 
-        // Rethrow the exception
+        // 如果目标方法执行过程中抛出了异常，那么一定要重新抛出
         if (Objects.nonNull(throwable)) {
             throw throwable;
         }
@@ -111,6 +111,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
 
     private LogRecord encapsulateLogRecord(Operator operator,
                                           String bizTarget,
+                                          BizCategory operationCategory,
                                           String bizNo,
                                           String content,
                                           Throwable throwable) {
@@ -118,6 +119,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
         logRecord.setOperatorId(operator.getOperatorId());
         logRecord.setOperatorName(operator.getOperatorName());
         logRecord.setOperationTarget(bizTarget);
+        logRecord.setOperationCategory(operationCategory);
         logRecord.setBizNo(bizNo);
         logRecord.setOperationContent(content);
         logRecord.setOperationResult(Objects.isNull(throwable));
@@ -134,39 +136,21 @@ public class OperationLogInterceptor implements MethodInterceptor {
             return bizNo;
         }
 
-        String finalBizNo = null;
+        MethodBasedEvaluationContext methodBasedEvaluationContext = new MethodBasedEvaluationContext(
+                null, method, arguments, PARAMETER_NAME_DISCOVERER);
         if (PLACE_ORDER.name().equals(bizCategory.name())
                 || CREATE.name().equals(bizCategory.name())) {
-            finalBizNo = parseSpelValue(bizNo, result);
-        } else {
-            for (int index = 0; index < arguments.length; index++) {
-                Object arg = arguments[index];
-                if (arg instanceof BindingResult) {
-                    // Skip parse
-                } else if (arg instanceof Collection<?>) {
-                    // Unsupported collection argument
-                } else {
-                    MethodParameter methodParameter = new MethodParameter(method, index);
-                    if (methodParameter.hasParameterAnnotation(RequestBody.class)) {
-                        finalBizNo = parseSpelValue(bizNo, arg);
-                        break;
-                    }
-                    finalBizNo = parseSpelValue(bizNo, arg);
-                }
-                if (StringUtils.isNotEmpty(finalBizNo)) {
-                    break;
-                }
-            }
+            methodBasedEvaluationContext.setVariable(ClassUtils.getSimpleName(result), result);
         }
 
-        return finalBizNo;
+        return parseSpelValue(bizNo, methodBasedEvaluationContext);
     }
 
-    private String parseSpelValue(String spel, Object rootObj) {
+    private String parseSpelValue(String spel, MethodBasedEvaluationContext methodBasedEvaluationContext) {
         String spelVal = null;
         try {
             Expression expression = expressionParser.parseExpression(spel);
-            spelVal = expression.getValue(rootObj, String.class);
+            spelVal = expression.getValue(methodBasedEvaluationContext, String.class);
         } catch (ParseException | EvaluationException e) {
             // Nothing to do
         }

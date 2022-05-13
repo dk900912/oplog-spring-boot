@@ -8,7 +8,7 @@ import io.github.dk900912.oplog.Operator;
  */
 public class DefaultOperatorServiceImpl implements OperatorService {
     /**
-     * @return
+     * @return Operator
      */
     @Override
     public Operator getOperator() {
