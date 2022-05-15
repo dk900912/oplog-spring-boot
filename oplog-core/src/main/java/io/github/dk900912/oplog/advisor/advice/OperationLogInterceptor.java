@@ -32,15 +32,24 @@ import static io.github.dk900912.oplog.BizCategory.PLACE_ORDER;
  * @author dukui
  */
 public class OperationLogInterceptor implements MethodInterceptor {
-
+    /**
+     * SpEL 表达式必须要以 # 开头，否则不会走解析逻辑
+     */
     private static final String SPEL_PREFIX = "#";
-    // thread-safe
-    private static final LocalVariableTableParameterNameDiscoverer PARAMETER_NAME_DISCOVERER = new LocalVariableTableParameterNameDiscoverer();
+
+    /**
+     * thread-safe
+     */
+    private static final LocalVariableTableParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
+            new LocalVariableTableParameterNameDiscoverer();
 
     private OperatorService operatorService;
 
     private LogRecordPersistenceService logRecordPersistenceService;
-    // thread-safe
+
+    /**
+     * thread-safe
+     */
     private final ExpressionParser expressionParser;
 
     public OperationLogInterceptor() {
@@ -48,7 +57,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
     }
 
     /**
-     * @param invocation  连接点，Spring AOP 在连接点周围维护了连接器链
+     * @param invocation  连接点，Spring AOP 在连接点周围维护了拦截器链
      * @return            返回目标方法执行的结果
      * @throws Throwable  目标方法执行过程中所抛出的异常
      */
@@ -64,7 +73,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
         }
 
         Method method = invocation.getMethod();
-        // operationLogAnnotation 不可能是 null，只能进入了当前方法中，那么目标方法一定是由 @OperationLog 注解标注
+        // operationLogAnnotation 不可能是 null，只要进入了当前方法中，那么目标方法一定是由 @OperationLog 注解标注
         Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
         Map<String, Object> operationLogAnnotationAttrMap = AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
 

@@ -1,6 +1,7 @@
 package io.github.dk900912.oplog;
 
 import java.time.LocalDateTime;
+import java.util.StringJoiner;
 
 /**
  * @author dukui
@@ -125,14 +126,13 @@ public class LogRecord {
 
     @Override
     public String toString() {
-        return "LogRecord{" +
-                "operatorId='" + operatorId + '\'' +
-                ", operatorName='" + operatorName + '\'' +
-                ", operationTarget='" + operationTarget + '\'' +
-                ", operationCategory=" + operationCategory +
-                ", bizNo='" + bizNo + '\'' +
-                ", operationResult=" + operationResult +
-                ", operationTime=" + operationTime +
-                '}';
+        return new StringJoiner(", ", "[", "]")
+                .add("operatorId='" + operatorId + "'")
+                .add("operatorName='" + operatorName + "'")
+                .add("operationTarget='" + operationTarget + "'")
+                .add("operationCategory=" + operationCategory)
+                .add("bizNo='" + bizNo + "'")
+                .add("operationResult=" + operationResult)
+                .toString();
     }
 }
