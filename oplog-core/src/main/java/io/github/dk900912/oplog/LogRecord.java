@@ -48,6 +48,16 @@ public class LogRecord {
     private boolean operationResult;
 
     /**
+     * 请求路径
+     *
+     * {@link org.springframework.web.bind.annotation.GetMapping#path()}
+     * {@link org.springframework.web.bind.annotation.PostMapping#path()}
+     * {@link org.springframework.web.bind.annotation.PutMapping#path()}
+     * {@link org.springframework.web.bind.annotation.DeleteMapping#path()}
+     */
+    private String requestMapping;
+
+    /**
      * 操作日志发生时间
      */
     private LocalDateTime operationTime;
@@ -114,6 +124,14 @@ public class LogRecord {
 
     public void setOperationResult(boolean operationResult) {
         this.operationResult = operationResult;
+    }
+
+    public String getRequestMapping() {
+        return requestMapping;
+    }
+
+    public void setRequestMapping(String requestMapping) {
+        this.requestMapping = requestMapping;
     }
 
     public LocalDateTime getOperationTime() {

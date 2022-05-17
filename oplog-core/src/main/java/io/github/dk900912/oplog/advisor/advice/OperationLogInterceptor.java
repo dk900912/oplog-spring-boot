@@ -8,22 +8,31 @@ import io.github.dk900912.oplog.persistence.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperatorService;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.expression.MethodBasedEvaluationContext;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static io.github.dk900912.oplog.BizCategory.CREATE;
 import static io.github.dk900912.oplog.BizCategory.PLACE_ORDER;
@@ -42,6 +51,8 @@ public class OperationLogInterceptor implements MethodInterceptor {
      */
     private static final LocalVariableTableParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
             new LocalVariableTableParameterNameDiscoverer();
+
+    private static final ConcurrentHashMap<Method, String> LOCAL_CACHE = new ConcurrentHashMap<>(200);
 
     private OperatorService operatorService;
 
@@ -65,26 +76,14 @@ public class OperationLogInterceptor implements MethodInterceptor {
     public Object invoke(MethodInvocation invocation) throws Throwable {
         Object result = null;
         Throwable throwable = null;
-        Object[] arguments = invocation.getArguments();
         try {
             result = invocation.proceed();
         } catch (Throwable e) {
             throwable = e;
         }
 
-        Method method = invocation.getMethod();
-        // operationLogAnnotation 不可能是 null，只要进入了当前方法中，那么目标方法一定是由 @OperationLog 注解标注
-        Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
-        Map<String, Object> operationLogAnnotationAttrMap = AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
-
-        Operator operator = getOperator();
-        BizCategory bizCategory =  (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
-        String bizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
-        String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
-        String bizNo =  parseBizNo(bizCategory, result, method, originBizNo, arguments);
-        String operationLogContent = encapsulateOperationLogContent(operator, bizCategory, bizTarget, bizNo);
-        LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, bizCategory, bizNo, operationLogContent, throwable);
-        logRecordPersistenceService.doLogRecordPersistence(logRecord);
+        // 切面逻辑
+        persistOperationLog(invocation, result, throwable);
 
         // 如果目标方法执行过程中抛出了异常，那么一定要重新抛出
         if (Objects.nonNull(throwable)) {
@@ -106,6 +105,64 @@ public class OperationLogInterceptor implements MethodInterceptor {
         return operatorService.getOperator();
     }
 
+    // +------------------------------------------------+
+    // |               private methods                  |
+    // +------------------------------------------------+
+
+    private void persistOperationLog(MethodInvocation invocation, Object result, Throwable throwable) {
+        Object[] arguments = invocation.getArguments();
+        Method method = invocation.getMethod();
+        Map<String, Object> operationLogAnnotationAttrMap = getOperationLogAnnotationAttr(method);
+        String requestMapping = getRequestMapping(method);
+        Operator operator = getOperator();
+        BizCategory bizCategory =  (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
+        String bizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
+        String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
+        String bizNo =  parseBizNo(bizCategory, result, method, originBizNo, arguments);
+        LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, bizCategory, bizNo, requestMapping, throwable);
+        logRecordPersistenceService.doLogRecordPersistence(logRecord);
+    }
+
+    private String getRequestMapping(Method method) {
+        String requestMapping = LOCAL_CACHE.get(method);
+        if (StringUtils.isNotEmpty(requestMapping)) {
+            return requestMapping;
+        }
+        try {
+            RequestMapping requestMappingOnMethod = AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class);
+            Class<?> userType = ClassUtils.getUserClass(method.getDeclaringClass());
+            RequestMapping requestMappingOnClass = AnnotatedElementUtils.findMergedAnnotation(userType, RequestMapping.class);
+            List<String> list = new ArrayList<>();
+            if (Objects.nonNull(requestMappingOnClass)) {
+                String[] pathArrayOnClass = requestMappingOnClass.path();
+                if (ArrayUtils.isNotEmpty(pathArrayOnClass)) {
+                    list.addAll(Arrays.asList(StringUtils.split(pathArrayOnClass[0], "/")));
+                }
+            }
+            if (Objects.nonNull(requestMappingOnMethod)) {
+                String[] pathArrayOnMethod = requestMappingOnMethod.path();
+                if (ArrayUtils.isNotEmpty(pathArrayOnMethod)) {
+                    list.addAll(Arrays.asList(StringUtils.split(pathArrayOnMethod[0], "/")));
+                }
+            }
+            if (!CollectionUtils.isEmpty(list)) {
+                requestMapping = list
+                        .stream()
+                        .filter(StringUtils::isNotEmpty)
+                        .collect(Collectors.joining("/"));
+                LOCAL_CACHE.put(method, requestMapping);
+            }
+        } catch (Throwable throwable) {
+            // Nothing to do
+        }
+        return "/" + requestMapping;
+    }
+
+    private Map<String, Object> getOperationLogAnnotationAttr(Method method) {
+        Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
+        return AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
+    }
+
     private String encapsulateOperationLogContent(Operator operator,
                                                   BizCategory bizCategory,
                                                   String bizTarget,
@@ -115,14 +172,13 @@ public class OperationLogInterceptor implements MethodInterceptor {
                 bizCategory.getName(),
                 bizTarget,
                 bizNo);
-
     }
 
     private LogRecord encapsulateLogRecord(Operator operator,
                                           String bizTarget,
                                           BizCategory operationCategory,
                                           String bizNo,
-                                          String content,
+                                          String requestMapping,
                                           Throwable throwable) {
         LogRecord logRecord = new LogRecord();
         logRecord.setOperatorId(operator.getOperatorId());
@@ -130,7 +186,8 @@ public class OperationLogInterceptor implements MethodInterceptor {
         logRecord.setOperationTarget(bizTarget);
         logRecord.setOperationCategory(operationCategory);
         logRecord.setBizNo(bizNo);
-        logRecord.setOperationContent(content);
+        logRecord.setRequestMapping(requestMapping);
+        logRecord.setOperationContent(encapsulateOperationLogContent(operator, operationCategory, bizTarget, bizNo));
         logRecord.setOperationResult(Objects.isNull(throwable));
         logRecord.setOperationTime(LocalDateTime.now());
         return logRecord;
@@ -149,9 +206,10 @@ public class OperationLogInterceptor implements MethodInterceptor {
                 null, method, arguments, PARAMETER_NAME_DISCOVERER);
         if (PLACE_ORDER.name().equals(bizCategory.name())
                 || CREATE.name().equals(bizCategory.name())) {
-            methodBasedEvaluationContext.setVariable(ClassUtils.getSimpleName(result), result);
+            if (Objects.nonNull(result)) {
+                methodBasedEvaluationContext.setVariable(result.getClass().getSimpleName(), result);
+            }
         }
-
         return parseSpelValue(bizNo, methodBasedEvaluationContext);
     }
 
@@ -163,7 +221,6 @@ public class OperationLogInterceptor implements MethodInterceptor {
         } catch (ParseException | EvaluationException e) {
             // Nothing to do
         }
-
         return spelVal;
     }
 }
