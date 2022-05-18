@@ -209,7 +209,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
         if (PLACE_ORDER.name().equals(bizCategory.name())
                 || CREATE.name().equals(bizCategory.name())) {
             if (Objects.nonNull(result)) {
-                methodBasedEvaluationContext.setVariable(result.getClass().getSimpleName(), result);
+                methodBasedEvaluationContext.setVariable(StringUtils.uncapitalize(result.getClass().getSimpleName()), result);
             }
         }
         return parseSpelValue(bizNo, methodBasedEvaluationContext);

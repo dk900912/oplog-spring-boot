@@ -1,3 +1,2 @@
-# Auto Configure
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 io.github.dk900912.oplog.autoconfigure.OperationLogAutoConfiguration

@@ -18,17 +18,23 @@ import java.lang.annotation.Target;
 @Documented
 public @interface OperationLog {
     /**
-     * 操作种类：新增、更新和删除等
+     * 返回操作种类：新增、更新和删除等
+     *
+     * @return bizCategory
      */
     BizCategory bizCategory();
 
     /**
-     * 业务对象，如：订单、用户、商品等
+     * 返回业务对象，如：订单、用户、商品等
+     *
+     * @return bizTarget
      */
     String bizTarget();
 
     /**
-     * 业务对象唯一标识；支持 SpEL 表达式，但务必以 # 作为 SpEL 表达式的前缀
+     * 返回业务唯一标识，支持 SpEL 表达式
+     *
+     * @return bizNo
      */
     String bizNo();
 }
