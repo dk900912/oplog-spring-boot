@@ -1,4 +1,4 @@
-package io.github.dk900912.oplog.persistence;
+package io.github.dk900912.oplog.service;
 
 import io.github.dk900912.oplog.LogRecord;
 
@@ -11,5 +11,5 @@ public interface LogRecordPersistenceService {
      *
      * @param logRecord 操作日志实体
      */
-    public void doLogRecordPersistence(LogRecord logRecord);
+    void doLogRecordPersistence(LogRecord logRecord);
 }

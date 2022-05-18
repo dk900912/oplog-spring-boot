@@ -4,7 +4,7 @@ import io.github.dk900912.oplog.BizCategory;
 import io.github.dk900912.oplog.LogRecord;
 import io.github.dk900912.oplog.Operator;
 import io.github.dk900912.oplog.annotation.OperationLog;
-import io.github.dk900912.oplog.persistence.LogRecordPersistenceService;
+import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperatorService;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -52,7 +52,8 @@ public class OperationLogInterceptor implements MethodInterceptor {
     private static final LocalVariableTableParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
             new LocalVariableTableParameterNameDiscoverer();
 
-    private static final ConcurrentHashMap<Method, String> LOCAL_CACHE = new ConcurrentHashMap<>(200);
+    private static final ConcurrentHashMap<Method, String> LOCAL_CACHE =
+            new ConcurrentHashMap<>(200);
 
     private OperatorService operatorService;
 
@@ -132,7 +133,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
             RequestMapping requestMappingOnMethod = AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class);
             Class<?> userType = ClassUtils.getUserClass(method.getDeclaringClass());
             RequestMapping requestMappingOnClass = AnnotatedElementUtils.findMergedAnnotation(userType, RequestMapping.class);
-            List<String> list = new ArrayList<>();
+            List<String> list = new ArrayList<>(8);
             if (Objects.nonNull(requestMappingOnClass)) {
                 String[] pathArrayOnClass = requestMappingOnClass.path();
                 if (ArrayUtils.isNotEmpty(pathArrayOnClass)) {
@@ -149,29 +150,18 @@ public class OperationLogInterceptor implements MethodInterceptor {
                 requestMapping = list
                         .stream()
                         .filter(StringUtils::isNotEmpty)
-                        .collect(Collectors.joining("/"));
+                        .collect(Collectors.joining("/", "/", ""));
                 LOCAL_CACHE.put(method, requestMapping);
             }
         } catch (Throwable throwable) {
             // Nothing to do
         }
-        return "/" + requestMapping;
+        return requestMapping;
     }
 
     private Map<String, Object> getOperationLogAnnotationAttr(Method method) {
         Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
         return AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
-    }
-
-    private String encapsulateOperationLogContent(Operator operator,
-                                                  BizCategory bizCategory,
-                                                  String bizTarget,
-                                                  String bizNo) {
-        return String.format("%s %s %s, bizNo = %s",
-                StringUtils.isNotEmpty(operator.getOperatorName()) ? operator.getOperatorName() : operator.getOperatorId(),
-                bizCategory.getName(),
-                bizTarget,
-                bizNo);
     }
 
     private LogRecord encapsulateLogRecord(Operator operator,
@@ -191,6 +181,17 @@ public class OperationLogInterceptor implements MethodInterceptor {
         logRecord.setOperationResult(Objects.isNull(throwable));
         logRecord.setOperationTime(LocalDateTime.now());
         return logRecord;
+    }
+
+    private String encapsulateOperationLogContent(Operator operator,
+                                                  BizCategory bizCategory,
+                                                  String bizTarget,
+                                                  String bizNo) {
+        return String.format("%s %s %s, bizNo = %s",
+                StringUtils.isNotEmpty(operator.getOperatorName()) ? operator.getOperatorName() : operator.getOperatorId(),
+                bizCategory.getName(),
+                bizTarget,
+                bizNo);
     }
 
     private String parseBizNo(BizCategory bizCategory,

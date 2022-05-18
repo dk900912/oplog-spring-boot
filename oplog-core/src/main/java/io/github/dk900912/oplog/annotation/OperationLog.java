@@ -1,7 +1,6 @@
 package io.github.dk900912.oplog.annotation;
 
 import io.github.dk900912.oplog.BizCategory;
-import org.springframework.stereotype.Controller;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -11,8 +10,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 该注解建议用于 {@link Controller} 中的方法
- *
  * @author dukui
  */
 @Target(ElementType.METHOD)
