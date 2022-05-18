@@ -1,9 +1,9 @@
 package io.github.dk900912.oplog.advisor.advice;
 
-import io.github.dk900912.oplog.BizCategory;
-import io.github.dk900912.oplog.LogRecord;
-import io.github.dk900912.oplog.Operator;
 import io.github.dk900912.oplog.annotation.OperationLog;
+import io.github.dk900912.oplog.model.BizCategory;
+import io.github.dk900912.oplog.model.LogRecord;
+import io.github.dk900912.oplog.model.Operator;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperatorService;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -34,8 +34,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static io.github.dk900912.oplog.BizCategory.CREATE;
-import static io.github.dk900912.oplog.BizCategory.PLACE_ORDER;
+import static io.github.dk900912.oplog.model.BizCategory.CREATE;
+import static io.github.dk900912.oplog.model.BizCategory.PLACE_ORDER;
 
 /**
  * @author dukui
@@ -170,17 +170,18 @@ public class OperationLogInterceptor implements MethodInterceptor {
                                           String bizNo,
                                           String requestMapping,
                                           Throwable throwable) {
-        LogRecord logRecord = new LogRecord();
-        logRecord.setOperatorId(operator.getOperatorId());
-        logRecord.setOperatorName(operator.getOperatorName());
-        logRecord.setOperationTarget(bizTarget);
-        logRecord.setOperationCategory(operationCategory);
-        logRecord.setBizNo(bizNo);
-        logRecord.setRequestMapping(requestMapping);
-        logRecord.setOperationContent(encapsulateOperationLogContent(operator, operationCategory, bizTarget, bizNo));
-        logRecord.setOperationResult(Objects.isNull(throwable));
-        logRecord.setOperationTime(LocalDateTime.now());
-        return logRecord;
+        return LogRecord
+                .builder()
+                .withOperatorId(operator.getOperatorId())
+                .withOperatorName(operator.getOperatorName())
+                .withOperationTarget(bizTarget)
+                .withOperationCategory(operationCategory)
+                .withBizNo(bizNo)
+                .withRequestMapping(requestMapping)
+                .withOperationContent(encapsulateOperationLogContent(operator, operationCategory, bizTarget, bizNo))
+                .withOperationResult(Objects.isNull(throwable))
+                .withOperationTime(LocalDateTime.now())
+                .build();
     }
 
     private String encapsulateOperationLogContent(Operator operator,

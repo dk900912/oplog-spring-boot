@@ -1,4 +1,4 @@
-package io.github.dk900912.oplog;
+package io.github.dk900912.oplog.model;
 
 import java.time.LocalDateTime;
 import java.util.StringJoiner;
@@ -50,10 +50,10 @@ public class LogRecord {
     /**
      * 请求路径
      *
-     * {@link org.springframework.web.bind.annotation.GetMapping#path()}
-     * {@link org.springframework.web.bind.annotation.PostMapping#path()}
-     * {@link org.springframework.web.bind.annotation.PutMapping#path()}
-     * {@link org.springframework.web.bind.annotation.DeleteMapping#path()}
+     * <li> {@link org.springframework.web.bind.annotation.GetMapping#path()}
+     * <li> {@link org.springframework.web.bind.annotation.PostMapping#path()}
+     * <li> {@link org.springframework.web.bind.annotation.PutMapping#path()}
+     * <li> {@link org.springframework.web.bind.annotation.DeleteMapping#path()}
      */
     private String requestMapping;
 
@@ -148,9 +148,105 @@ public class LogRecord {
                 .add("operatorId='" + operatorId + "'")
                 .add("operatorName='" + operatorName + "'")
                 .add("operationTarget='" + operationTarget + "'")
+                .add("requestMapping='" + requestMapping + "'")
                 .add("operationCategory=" + operationCategory)
                 .add("bizNo='" + bizNo + "'")
                 .add("operationResult=" + operationResult)
                 .toString();
+    }
+
+    public static LogRecordBuilder builder() {
+        return new LogRecordBuilder();
+    }
+
+    public static final class LogRecordBuilder {
+
+        private String operationLogId;
+
+        private String operatorId;
+
+        private String operatorName;
+
+        private String operationTarget;
+
+        private BizCategory operationCategory;
+
+        private String bizNo;
+
+        private String operationContent;
+
+        private boolean operationResult;
+
+        private String requestMapping;
+
+        private LocalDateTime operationTime;
+
+        private LogRecordBuilder() {
+        }
+
+        public LogRecordBuilder withOperationLogId(String operationLogId) {
+            this.operationLogId = operationLogId;
+            return this;
+        }
+
+        public LogRecordBuilder withOperatorId(String operatorId) {
+            this.operatorId = operatorId;
+            return this;
+        }
+
+        public LogRecordBuilder withOperatorName(String operatorName) {
+            this.operatorName = operatorName;
+            return this;
+        }
+
+        public LogRecordBuilder withOperationTarget(String operationTarget) {
+            this.operationTarget = operationTarget;
+            return this;
+        }
+
+        public LogRecordBuilder withOperationCategory(BizCategory operationCategory) {
+            this.operationCategory = operationCategory;
+            return this;
+        }
+
+        public LogRecordBuilder withBizNo(String bizNo) {
+            this.bizNo = bizNo;
+            return this;
+        }
+
+        public LogRecordBuilder withOperationContent(String operationContent) {
+            this.operationContent = operationContent;
+            return this;
+        }
+
+        public LogRecordBuilder withOperationResult(boolean operationResult) {
+            this.operationResult = operationResult;
+            return this;
+        }
+
+        public LogRecordBuilder withRequestMapping(String requestMapping) {
+            this.requestMapping = requestMapping;
+            return this;
+        }
+
+        public LogRecordBuilder withOperationTime(LocalDateTime operationTime) {
+            this.operationTime = operationTime;
+            return this;
+        }
+
+        public LogRecord build() {
+            LogRecord logRecord = new LogRecord();
+            logRecord.setOperationLogId(operationLogId);
+            logRecord.setOperatorId(operatorId);
+            logRecord.setOperatorName(operatorName);
+            logRecord.setOperationCategory(operationCategory);
+            logRecord.setBizNo(bizNo);
+            logRecord.setOperationTarget(operationTarget);
+            logRecord.setOperationContent(operationContent);
+            logRecord.setRequestMapping(requestMapping);
+            logRecord.setOperationResult(operationResult);
+            logRecord.setOperationTime(operationTime);
+            return logRecord;
+        }
     }
 }

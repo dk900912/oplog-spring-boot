@@ -1,6 +1,6 @@
 package io.github.dk900912.oplog.service.impl;
 
-import io.github.dk900912.oplog.LogRecord;
+import io.github.dk900912.oplog.model.LogRecord;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 
 import java.util.Objects;

@@ -1,6 +1,6 @@
 package io.github.dk900912.oplog.annotation;
 
-import io.github.dk900912.oplog.BizCategory;
+import io.github.dk900912.oplog.model.BizCategory;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

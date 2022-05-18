@@ -1,6 +1,6 @@
 package io.github.dk900912.oplog.service;
 
-import io.github.dk900912.oplog.Operator;
+import io.github.dk900912.oplog.model.Operator;
 
 /**
  * @author dukui

@@ -1,4 +1,4 @@
-package io.github.dk900912.oplog;
+package io.github.dk900912.oplog.model;
 
 /**
  * @author dukui
@@ -44,7 +44,7 @@ public enum BizCategory {
      */
     private final String name;
 
-    private BizCategory(String name) {
+    BizCategory(String name) {
         this.name = name;
     }
 
