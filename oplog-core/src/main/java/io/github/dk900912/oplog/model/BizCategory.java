@@ -20,6 +20,26 @@ public enum BizCategory {
     DELETE("删除"),
 
     /**
+     * 暂停
+     */
+    PAUSE("暂停"),
+
+    /**
+     * 恢复
+     */
+    RESUME("恢复"),
+
+    /**
+     * 绑定
+     */
+    BIND("绑定"),
+
+    /**
+     * 解绑
+     */
+    UNBIND("解绑"),
+
+    /**
      * 订购
      */
     PLACE_ORDER("订购"),
@@ -42,13 +62,13 @@ public enum BizCategory {
     /**
      * 业务操作种类描述
      */
-    private final String name;
+    private final String description;
 
-    BizCategory(String name) {
-        this.name = name;
+    BizCategory(String description) {
+        this.description = description;
     }
 
-    public String getName() {
-        return name;
+    public String getDescription() {
+        return description;
     }
 }

@@ -38,11 +38,6 @@ public class LogRecord {
     private String bizNo;
 
     /**
-     * 操作日志详情
-     */
-    private String operationContent;
-
-    /**
      * 操作日志结果：true，即成功；false，即失败
      */
     private boolean operationResult;
@@ -110,14 +105,6 @@ public class LogRecord {
         this.bizNo = bizNo;
     }
 
-    public String getOperationContent() {
-        return operationContent;
-    }
-
-    public void setOperationContent(String operationContent) {
-        this.operationContent = operationContent;
-    }
-
     public boolean isOperationResult() {
         return operationResult;
     }
@@ -173,8 +160,6 @@ public class LogRecord {
 
         private String bizNo;
 
-        private String operationContent;
-
         private boolean operationResult;
 
         private String requestMapping;
@@ -214,11 +199,6 @@ public class LogRecord {
             return this;
         }
 
-        public LogRecordBuilder withOperationContent(String operationContent) {
-            this.operationContent = operationContent;
-            return this;
-        }
-
         public LogRecordBuilder withOperationResult(boolean operationResult) {
             this.operationResult = operationResult;
             return this;
@@ -242,7 +222,6 @@ public class LogRecord {
             logRecord.setOperationCategory(operationCategory);
             logRecord.setBizNo(bizNo);
             logRecord.setOperationTarget(operationTarget);
-            logRecord.setOperationContent(operationContent);
             logRecord.setRequestMapping(requestMapping);
             logRecord.setOperationResult(operationResult);
             logRecord.setOperationTime(operationTime);

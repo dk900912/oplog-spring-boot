@@ -32,7 +32,7 @@ public class OperationLogAdvice {
 <dependency>
 	<groupId>io.github.dk900912</groupId>
 	<artifactId>oplog-spring-boot-starter</artifactId>
-	<version>1.0.7</version>
+	<version>1.0.9</version>
 </dependency>
 ```
 示例代码如下：
