@@ -22,12 +22,12 @@ import java.util.stream.Collectors;
  */
 public class RequestMappingParser implements Parser<Method> {
 
-    private static final ConcurrentHashMap<Method, String> LOCAL_CACHE =
+    private static final ConcurrentHashMap<Method, String> cache =
             new ConcurrentHashMap<>(200);
 
     @Override
     public String parse(Method target) {
-        String requestMapping = LOCAL_CACHE.get(target);
+        String requestMapping = cache.get(target);
         if (StringUtils.isNotEmpty(requestMapping)) {
             return requestMapping;
         }
@@ -36,27 +36,30 @@ public class RequestMappingParser implements Parser<Method> {
 
     private String doParse(Method method) {
         try {
-            RequestMapping requestMappingOnMethod = AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class);
+            List<String> list = new ArrayList<>(8);
+
             Class<?> userType = ClassUtils.getUserClass(method.getDeclaringClass());
             RequestMapping requestMappingOnClass = AnnotatedElementUtils.findMergedAnnotation(userType, RequestMapping.class);
-            List<String> list = new ArrayList<>(8);
             if (Objects.nonNull(requestMappingOnClass)) {
                 String[] pathArrayOnClass = requestMappingOnClass.path();
                 if (ArrayUtils.isNotEmpty(pathArrayOnClass)) {
                     list.addAll(Arrays.asList(StringUtils.split(pathArrayOnClass[0], "/")));
                 }
             }
+
+            RequestMapping requestMappingOnMethod = AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class);
             if (Objects.nonNull(requestMappingOnMethod)) {
                 String[] pathArrayOnMethod = requestMappingOnMethod.path();
                 if (ArrayUtils.isNotEmpty(pathArrayOnMethod)) {
                     list.addAll(Arrays.asList(StringUtils.split(pathArrayOnMethod[0], "/")));
                 }
             }
+
             if (!CollectionUtils.isEmpty(list)) {
                 String requestMapping = list.stream()
                         .filter(StringUtils::isNotEmpty)
                         .collect(Collectors.joining("/", "/", ""));
-                LOCAL_CACHE.put(method, requestMapping);
+                cache.put(method, requestMapping);
                 return requestMapping;
             }
         } catch (Throwable throwable) {

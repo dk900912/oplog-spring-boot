@@ -12,7 +12,7 @@
 @Component
 @Aspect
 public class OperationLogAdvice {
-    @Around(value = "@annotation(io.github.oplog.annotation.OperationLog)")
+    @Around(value = "@annotation(io.github.dk900912.oplog.annotation.OperationLog)")
     public Object doOperationLog(ProceedingJoinPoint joinPoint) {
         // STEP 1：执行目标方法
         Object result = null;
@@ -175,12 +175,26 @@ public class OperationLogPointcut extends StaticMethodMatcherPointcut {
 
 对于Advice呢，直接使用强大的`org.aopalliance.intercept.MethodInterceptor`接口即可，它可以模拟实现`MethodBeforeAdvice`、`AfterReturningAdvice`和`ThrowsAdvice`等。如下所示：
 ```java
-public class OperationLogAdvice implements MethodInterceptor {
+public class OperationLogInterceptor implements MethodInterceptor {
 
     private OperatorService operatorService;
 
     private LogRecordPersistenceService logRecordPersistenceService;
 
+    private final BizNoParser bizNoParser;
+
+    private final RequestMappingParser requestMappingParser;
+
+    public OperationLogInterceptor() {
+        this.bizNoParser = new BizNoParser();
+        this.requestMappingParser = new RequestMappingParser();
+    }
+
+    /**
+     * @param invocation  连接点，Spring AOP 在连接点周围维护了拦截器链
+     * @return            返回目标方法执行的结果
+     * @throws Throwable  目标方法执行过程中所抛出的异常
+     */
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
         Object result = null;
@@ -191,21 +205,67 @@ public class OperationLogAdvice implements MethodInterceptor {
             throwable = e;
         }
 
-        Method method = invocation.getMethod();
-        Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
-        Map<String, Object> operationLogAnnotationAttrMap = AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
-        Operator operator = getOperator();
-        BizCategory bizCategory =  (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
-        String bizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
-        String operation = String.format("%s %s %s", operator.getOperatorName(), bizCategory.getName(), bizTarget);
-        LogRecord logRecord = encapsulateLogRecord(operator, bizTarget, operation, throwable);
-        logRecordPersistenceService.doLogRecordPersistence(logRecord);
+        // 切面逻辑
+        persistOperationLog(new MethodInvocationResult(invocation, result, throwable));
 
+        // 如果目标方法执行过程中抛出了异常，那么一定要重新抛出
         if (Objects.nonNull(throwable)) {
             throw throwable;
         }
 
         return result;
+    }
+
+    public void setOperatorService(OperatorService operatorService) {
+        this.operatorService = operatorService;
+    }
+
+    public void setLogRecordPersistenceService(LogRecordPersistenceService logRecordPersistenceService) {
+        this.logRecordPersistenceService = logRecordPersistenceService;
+    }
+
+    // +------------------------------------------------+
+    // |               private methods                  |
+    // +------------------------------------------------+
+
+    private void persistOperationLog(MethodInvocationResult methodInvocationResult) {
+        LogRecord logRecord = encapsulateLogRecord(methodInvocationResult);
+        logRecordPersistenceService.doLogRecordPersistence(logRecord);
+    }
+
+    private LogRecord encapsulateLogRecord(MethodInvocationResult methodInvocationResult) {
+        MethodInvocation methodInvocation = methodInvocationResult.getMethodInvocation();
+        Method method = methodInvocation.getMethod();
+        Operator operator = getOperator();
+        Object result = methodInvocationResult.getResult();
+
+        Map<String, Object> operationLogAnnotationAttrMap = getOperationLogAnnotationAttr(method);
+        String requestMapping = requestMappingParser.parse(method);
+        BizCategory bizCategory =  (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
+        String bizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
+        String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
+        String bizNo =  bizNoParser.parse(new BizNoParseInfo(methodInvocation, result, originBizNo));
+
+        return LogRecord.builder()
+                .withOperatorId(operator.getOperatorId())
+                .withOperatorName(operator.getOperatorName())
+                .withOperationTarget(bizTarget)
+                .withOperationCategory(bizCategory)
+                .withBizNo(bizNo)
+                .withRequestMapping(requestMapping)
+                .withOperationResult(Objects.isNull(methodInvocationResult.getThrowable()))
+                .withOperationTime(LocalDateTime.now())
+                .build();
+    }
+
+    private Map<String, Object> getOperationLogAnnotationAttr(Method method) {
+        Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
+        return AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
+    }
+
+    private Operator getOperator() {
+        return Optional.ofNullable(operatorService.getOperator())
+                .orElse(new Operator());
     }
 }
 ```

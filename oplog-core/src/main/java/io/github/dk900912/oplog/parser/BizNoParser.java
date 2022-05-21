@@ -23,13 +23,12 @@ public class BizNoParser implements Parser<BizNoParseInfo> {
     /**
      * thread-safe
      */
-    private static final LocalVariableTableParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
+    private static final LocalVariableTableParameterNameDiscoverer parameterNameDiscoverer =
             new LocalVariableTableParameterNameDiscoverer();
-
     /**
      * thread-safe
      */
-    private static final ExpressionParser EXPRESSION_PARSER = new SpelExpressionParser();
+    private static final ExpressionParser expressionParser = new SpelExpressionParser();
 
     @Override
     public String parse(BizNoParseInfo target) {
@@ -43,21 +42,19 @@ public class BizNoParser implements Parser<BizNoParseInfo> {
         }
 
         MethodBasedEvaluationContext methodBasedEvaluationContext = new MethodBasedEvaluationContext(
-                null, method, arguments, PARAMETER_NAME_DISCOVERER);
+                null, method, arguments, parameterNameDiscoverer);
         Optional.<Object>ofNullable(result)
                 .map(Object::getClass)
                 .map(Class::getSimpleName)
                 .map(StringUtils::uncapitalize)
-                .ifPresent(key -> {
-                    methodBasedEvaluationContext.setVariable(key, result);
-                });
+                .ifPresent(key -> methodBasedEvaluationContext.setVariable(key, result));
         return doParse(originBizNo, methodBasedEvaluationContext);
     }
 
     private String doParse(String originBizNo, MethodBasedEvaluationContext methodBasedEvaluationContext) {
         String bizNo = null;
         try {
-            Expression expression = EXPRESSION_PARSER.parseExpression(originBizNo);
+            Expression expression = expressionParser.parseExpression(originBizNo);
             bizNo = expression.getValue(methodBasedEvaluationContext, String.class);
         } catch (ParseException | EvaluationException e) {
             // Nothing to do
