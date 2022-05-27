@@ -57,6 +57,11 @@ public class LogRecord {
      */
     private LocalDateTime operationTime;
 
+    /**
+     * 目标方法执行时间
+     */
+    private Long targetExecutionTime;
+
     public String getOperationLogId() {
         return operationLogId;
     }
@@ -129,6 +134,14 @@ public class LogRecord {
         this.operationTime = operationTime;
     }
 
+    public Long getTargetExecutionTime() {
+        return targetExecutionTime;
+    }
+
+    public void setTargetExecutionTime(Long targetExecutionTime) {
+        this.targetExecutionTime = targetExecutionTime;
+    }
+
     @Override
     public String toString() {
         return new StringJoiner(", ", "[", "]")
@@ -165,6 +178,8 @@ public class LogRecord {
         private String requestMapping;
 
         private LocalDateTime operationTime;
+
+        private Long targetExecutionTime;
 
         private LogRecordBuilder() {
         }
@@ -214,6 +229,11 @@ public class LogRecord {
             return this;
         }
 
+        public LogRecordBuilder withTargetExecutionTime(Long targetExecutionTime) {
+            this.targetExecutionTime = targetExecutionTime;
+            return this;
+        }
+
         public LogRecord build() {
             LogRecord logRecord = new LogRecord();
             logRecord.setOperationLogId(operationLogId);
@@ -225,6 +245,7 @@ public class LogRecord {
             logRecord.setRequestMapping(requestMapping);
             logRecord.setOperationResult(operationResult);
             logRecord.setOperationTime(operationTime);
+            logRecord.setTargetExecutionTime(targetExecutionTime);
             return logRecord;
         }
     }

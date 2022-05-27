@@ -13,6 +13,7 @@ import io.github.dk900912.oplog.service.OperatorService;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.util.StopWatch;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -48,14 +49,18 @@ public class OperationLogInterceptor implements MethodInterceptor {
     public Object invoke(MethodInvocation invocation) throws Throwable {
         Object result = null;
         Throwable throwable = null;
+        StopWatch stopWatch = new StopWatch();
         try {
+            stopWatch.start();
             result = invocation.proceed();
         } catch (Throwable e) {
             throwable = e;
+        } finally {
+            stopWatch.stop();
         }
 
         // 切面逻辑
-        persistOperationLog(new MethodInvocationResult(invocation, result, throwable));
+        persistOperationLog(new MethodInvocationResult(invocation, result, throwable, stopWatch));
 
         // 如果目标方法执行过程中抛出了异常，那么一定要重新抛出
         if (Objects.nonNull(throwable)) {
@@ -87,6 +92,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
         Method method = methodInvocation.getMethod();
         Operator operator = getOperator();
         Object result = methodInvocationResult.getResult();
+        StopWatch performance = methodInvocationResult.getPerformance();
 
         Map<String, Object> operationLogAnnotationAttrMap = getOperationLogAnnotationAttr(method);
         String requestMapping = requestMappingParser.parse(method);
@@ -104,6 +110,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
                 .withRequestMapping(requestMapping)
                 .withOperationResult(Objects.isNull(methodInvocationResult.getThrowable()))
                 .withOperationTime(LocalDateTime.now())
+                .withTargetExecutionTime(performance.getTotalTimeMillis())
                 .build();
     }
 
