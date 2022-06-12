@@ -20,6 +20,11 @@ public enum BizCategory {
     DELETE("删除"),
 
     /**
+     * 资源查询
+     */
+    FIND("查询"),
+
+    /**
      * 暂停
      */
     PAUSE("暂停"),
@@ -57,7 +62,17 @@ public enum BizCategory {
     /**
      * 资源变更
      */
-    ADJUST_RESOURCE("资源变更");
+    ADJUST_RESOURCE("资源变更"),
+
+    /**
+     * 激活
+     */
+    ACTIVATE("激活"),
+
+    /**
+     * 冻结
+     */
+    FREEZE("冻结");
 
     /**
      * 业务操作种类描述

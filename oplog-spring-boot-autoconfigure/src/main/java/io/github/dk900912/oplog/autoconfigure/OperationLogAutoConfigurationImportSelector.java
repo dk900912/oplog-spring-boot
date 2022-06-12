@@ -3,9 +3,9 @@ package io.github.dk900912.oplog.autoconfigure;
 import io.github.dk900912.oplog.advisor.OperationLogPointcutAdvisor;
 import io.github.dk900912.oplog.advisor.advice.OperationLogInterceptor;
 import io.github.dk900912.oplog.advisor.pointcut.OperationLogPointcut;
-import io.github.dk900912.oplog.service.impl.DefaultLogRecordPersistenceServiceImpl;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperatorService;
+import io.github.dk900912.oplog.service.impl.DefaultLogRecordPersistenceServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperatorServiceImpl;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -14,10 +14,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
 import org.springframework.context.annotation.Role;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author dukui
@@ -27,6 +29,12 @@ import java.util.Objects;
 public class OperationLogAutoConfigurationImportSelector implements ImportAware {
 
     protected AnnotationAttributes enableOperationLog;
+
+    private final OpLogProperties opLogProperties;
+
+    public OperationLogAutoConfigurationImportSelector(OpLogProperties opLogProperties) {
+        this.opLogProperties = opLogProperties;
+    }
 
     @Override
     public void setImportMetadata(AnnotationMetadata importMetadata) {
@@ -65,8 +73,17 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
         operationLogInterceptor.setLogRecordPersistenceService(logRecordPersistenceService);
         operationLogPointcutAdvisor.setAdvice(operationLogInterceptor);
 
-        if (Objects.nonNull(this.enableOperationLog)) {
-            operationLogPointcutAdvisor.setOrder(this.enableOperationLog.<Integer>getNumber("order"));
+        Integer logPointcutAdvisorOrderFromAnnotation = Optional.<AnnotationAttributes>ofNullable(this.enableOperationLog)
+                .map(annotationAttributes -> annotationAttributes.<Integer>getNumber("order"))
+                .orElse(Ordered.LOWEST_PRECEDENCE);
+        Integer logPointcutAdvisorOrderFromProperty = Optional.<OpLogProperties>ofNullable(opLogProperties)
+                .map(OpLogProperties::getAdvisor)
+                .map(OpLogProperties.Advisor::getOrder)
+                .orElse(null);
+        if (Objects.nonNull(logPointcutAdvisorOrderFromProperty)) {
+            operationLogPointcutAdvisor.setOrder(logPointcutAdvisorOrderFromProperty);
+        } else {
+            operationLogPointcutAdvisor.setOrder(logPointcutAdvisorOrderFromAnnotation);
         }
 
         return operationLogPointcutAdvisor;

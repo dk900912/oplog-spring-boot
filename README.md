@@ -34,7 +34,7 @@ public class OperationLogAdvice {
 <dependency>
 	<groupId>io.github.dk900912</groupId>
 	<artifactId>oplog-spring-boot-starter</artifactId>
-	<version>1.0.9</version>
+	<version>1.0.12</version>
 </dependency>
 ```
 示例代码如下：
@@ -48,7 +48,7 @@ public class DemoController {
         this.operationLogDao = operationLogDao;
     }
 
-    @OperationLog(bizCategory = BizCategory.CREATE, bizTarget = "订单", bizNo = "#AppResult.data.orderId")
+    @OperationLog(bizCategory = BizCategory.CREATE, bizTarget = "订单", bizNo = "#appResult.data.orderId")
     @PostMapping(path = "/create")
     public AppResult create(@RequestBody OrderReq orderReq) {
         // 创建资源时，一般前端不会将ID传过来，所以一般都是从响应结果中获取bizNo哈
@@ -70,6 +70,11 @@ public class DemoController {
 }
 ```
 > 如果业务方法A调用了业务方法B，且A和B这俩方法都由@OperationLog标记，那么B方法中并不会记录操作日志，这是Spring AOP的老问题了，官方也提供了解决方法，比如使用`AopContext.currentProxy()`。
+## 如何屏蔽
+一旦引入起步依赖组件，那么将自动开启日志记录功能。除了移除依赖包之外，还可以在`application.properties`中追加以下配置来实现屏蔽目的：
+```
+oplog.enabled=false
+```
 ## 代理对象如何生成
 基于方法注解实现操作日志这一方案需要依赖于`Spring AOP`，核心思想就是借助Spring AOP去自动探测由`OperationLog`注解接口标记的业务逻辑类，从而为这些业务类动态创建代理对象。既然Spring AOP是基于代理对象来拓展目标对象的，那就很容易想到：Spring IoC容器内贮存的一定是代理对象而非目标对象，那究竟是如何替换的呢？众所周知，Spring暴露了若干IoC容器拓展点(IoC Container Extensiion Points)，`BeanPostProcessor`接口就是其中之一；有了BeanPostProcessor，任何人都可以在Bean初始化前后对其进行个性化改造，甚至将其替换。
 

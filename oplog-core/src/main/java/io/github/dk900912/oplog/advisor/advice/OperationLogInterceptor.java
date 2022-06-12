@@ -83,7 +83,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
     // +------------------------------------------------+
 
     private void persistOperationLog(MethodInvocationResult methodInvocationResult) {
-        LogRecord logRecord = encapsulateLogRecord(methodInvocationResult);
+        final LogRecord logRecord = encapsulateLogRecord(methodInvocationResult);
         logRecordPersistenceService.doLogRecordPersistence(logRecord);
     }
 
