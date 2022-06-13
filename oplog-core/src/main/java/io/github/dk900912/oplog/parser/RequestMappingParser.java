@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
  * @author dukui
  */
 public class RequestMappingParser implements Parser<Method> {
+
+    private static final Logger logger = Logger.getLogger(RequestMappingParser.class.getName());
 
     private static final ConcurrentHashMap<Method, String> cache =
             new ConcurrentHashMap<>(200);
@@ -63,7 +66,7 @@ public class RequestMappingParser implements Parser<Method> {
                 return requestMapping;
             }
         } catch (Throwable throwable) {
-            // Nothing to do
+            logger.warning("An error happened while parsing request mapping info");
         }
         return null;
     }

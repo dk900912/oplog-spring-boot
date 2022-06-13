@@ -2,11 +2,11 @@ package io.github.dk900912.oplog.advisor.advice;
 
 import io.github.dk900912.oplog.annotation.OperationLog;
 import io.github.dk900912.oplog.model.BizCategory;
-import io.github.dk900912.oplog.model.BizNoParseInfo;
 import io.github.dk900912.oplog.model.LogRecord;
 import io.github.dk900912.oplog.model.MethodInvocationResult;
 import io.github.dk900912.oplog.model.Operator;
-import io.github.dk900912.oplog.parser.BizNoParser;
+import io.github.dk900912.oplog.model.ParsableBizInfo;
+import io.github.dk900912.oplog.parser.BizAttributeBasedSpExprParser;
 import io.github.dk900912.oplog.parser.RequestMappingParser;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperatorService;
@@ -31,12 +31,12 @@ public class OperationLogInterceptor implements MethodInterceptor {
 
     private LogRecordPersistenceService logRecordPersistenceService;
 
-    private final BizNoParser bizNoParser;
+    private final BizAttributeBasedSpExprParser bizAttributeBasedSpExprParser;
 
     private final RequestMappingParser requestMappingParser;
 
     public OperationLogInterceptor() {
-        this.bizNoParser = new BizNoParser();
+        this.bizAttributeBasedSpExprParser = new BizAttributeBasedSpExprParser();
         this.requestMappingParser = new RequestMappingParser();
     }
 
@@ -96,10 +96,11 @@ public class OperationLogInterceptor implements MethodInterceptor {
 
         Map<String, Object> operationLogAnnotationAttrMap = getOperationLogAnnotationAttr(method);
         String requestMapping = requestMappingParser.parse(method);
-        BizCategory bizCategory =  (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
-        String bizTarget =  (String) operationLogAnnotationAttrMap.get("bizTarget");
+        BizCategory bizCategory = (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
+        String originBizTarget = (String) operationLogAnnotationAttrMap.get("bizTarget");
         String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
-        String bizNo =  bizNoParser.parse(new BizNoParseInfo(methodInvocation, result, originBizNo));
+        String bizTarget = bizAttributeBasedSpExprParser.parse(new ParsableBizInfo(methodInvocation, result, originBizTarget));
+        String bizNo = bizAttributeBasedSpExprParser.parse(new ParsableBizInfo(methodInvocation, result, originBizNo));
 
         return LogRecord.builder()
                 .withOperatorId(operator.getOperatorId())
@@ -116,6 +117,7 @@ public class OperationLogInterceptor implements MethodInterceptor {
 
     private Map<String, Object> getOperationLogAnnotationAttr(Method method) {
         Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
+        // Never null
         return AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
     }
 

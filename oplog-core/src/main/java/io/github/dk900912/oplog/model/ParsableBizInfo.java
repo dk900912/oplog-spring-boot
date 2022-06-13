@@ -5,18 +5,18 @@ import org.aopalliance.intercept.MethodInvocation;
 /**
  * @author dukui
  */
-public class BizNoParseInfo {
+public class ParsableBizInfo {
 
     private MethodInvocation methodInvocation;
 
     private Object result;
 
-    private String originBizNo;
+    private String originParsableTarget;
 
-    public BizNoParseInfo(MethodInvocation methodInvocation, Object result, String originBizNo) {
+    public ParsableBizInfo(MethodInvocation methodInvocation, Object result, String originParsableTarget) {
         this.methodInvocation = methodInvocation;
         this.result = result;
-        this.originBizNo = originBizNo;
+        this.originParsableTarget = originParsableTarget;
     }
 
     public MethodInvocation getMethodInvocation() {
@@ -35,11 +35,11 @@ public class BizNoParseInfo {
         this.result = result;
     }
 
-    public String getOriginBizNo() {
-        return originBizNo;
+    public String getOriginParsableTarget() {
+        return originParsableTarget;
     }
 
-    public void setOriginBizNo(String originBizNo) {
-        this.originBizNo = originBizNo;
+    public void setOriginParsableTarget(String originParsableTarget) {
+        this.originParsableTarget = originParsableTarget;
     }
 }

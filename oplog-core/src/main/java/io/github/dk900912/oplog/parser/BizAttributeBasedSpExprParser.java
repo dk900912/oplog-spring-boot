@@ -1,6 +1,6 @@
 package io.github.dk900912.oplog.parser;
 
-import io.github.dk900912.oplog.model.BizNoParseInfo;
+import io.github.dk900912.oplog.model.ParsableBizInfo;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.expression.MethodBasedEvaluationContext;
@@ -13,32 +13,37 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 /**
- * <h3> BizNo 解析器 </h3>
+ * <h3> 基于 Spring EL、面向 BizTarget 和 BizNo 的解析器 </h3>
  *
  * @author dukui
  */
-public class BizNoParser implements Parser<BizNoParseInfo> {
+public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
+
+    private static final Logger logger = Logger.getLogger(BizAttributeBasedSpExprParser.class.getName());
+
     /**
      * thread-safe
      */
     private static final LocalVariableTableParameterNameDiscoverer parameterNameDiscoverer =
             new LocalVariableTableParameterNameDiscoverer();
+
     /**
      * thread-safe
      */
     private static final ExpressionParser expressionParser = new SpelExpressionParser();
 
     @Override
-    public String parse(BizNoParseInfo target) {
-        final Object result = target.getResult();
-        final String originBizNo = target.getOriginBizNo();
-        final MethodInvocation methodInvocation = target.getMethodInvocation();
+    public String parse(ParsableBizInfo parsableBizInfo) {
+        final Object result = parsableBizInfo.getResult();
+        final String originParsableTarget = parsableBizInfo.getOriginParsableTarget();
+        final MethodInvocation methodInvocation = parsableBizInfo.getMethodInvocation();
         final Method method = methodInvocation.getMethod();
         final Object[] arguments = methodInvocation.getArguments();
-        if (StringUtils.isEmpty(originBizNo) || !originBizNo.startsWith("#")) {
-            return originBizNo;
+        if (StringUtils.isEmpty(originParsableTarget) || !originParsableTarget.startsWith("#")) {
+            return originParsableTarget;
         }
 
         MethodBasedEvaluationContext methodBasedEvaluationContext = new MethodBasedEvaluationContext(
@@ -48,16 +53,16 @@ public class BizNoParser implements Parser<BizNoParseInfo> {
                 .map(Class::getSimpleName)
                 .map(StringUtils::uncapitalize)
                 .ifPresent(key -> methodBasedEvaluationContext.setVariable(key, result));
-        return doParse(originBizNo, methodBasedEvaluationContext);
+        return doParse(originParsableTarget, methodBasedEvaluationContext);
     }
 
-    private String doParse(String originBizNo, MethodBasedEvaluationContext methodBasedEvaluationContext) {
+    private String doParse(String originParsableTarget, MethodBasedEvaluationContext methodBasedEvaluationContext) {
         String bizNo = null;
         try {
-            Expression expression = expressionParser.parseExpression(originBizNo);
+            Expression expression = expressionParser.parseExpression(originParsableTarget);
             bizNo = expression.getValue(methodBasedEvaluationContext, String.class);
         } catch (ParseException | EvaluationException e) {
-            // Nothing to do
+            logger.warning("An error happened while parsing biz-target or biz-no");
         }
         return bizNo;
     }
