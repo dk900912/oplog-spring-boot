@@ -23,6 +23,22 @@ public class LogRecord {
     private String operatorName;
 
     /**
+     * <pre>
+     * public static String getRealClientIp(HttpServletRequest request) {
+     *     String xForwardedFor = request.getHeader("X-Forwarded-For");
+     *     if (!StringUtils.isBlank(xForwardedFor)) {
+     *         return xForwardedFor.split(",")[0].trim();
+     *     }
+     *     String nginxHeader = request.getHeader("X-Real-IP");
+     *     return StringUtils.isBlank(nginxHeader) ? request.getRemoteAddr() : nginxHeader;
+     * }
+     * </pre>
+     *
+     * 操作用户IP
+     */
+    private String operatorIp;
+
+    /**
      * 被操作对象中文标识，比如：订单、用户、商品等
      */
     private String operationTarget;
@@ -86,6 +102,14 @@ public class LogRecord {
         this.operatorName = operatorName;
     }
 
+    public String getOperatorIp() {
+        return operatorIp;
+    }
+
+    public void setOperatorIp(String operatorIp) {
+        this.operatorIp = operatorIp;
+    }
+
     public String getOperationTarget() {
         return operationTarget;
     }
@@ -147,11 +171,13 @@ public class LogRecord {
         return new StringJoiner(", ", "[", "]")
                 .add("operatorId='" + operatorId + "'")
                 .add("operatorName='" + operatorName + "'")
+                .add("operatorIp='" + operatorIp + "'")
                 .add("operationTarget='" + operationTarget + "'")
                 .add("requestMapping='" + requestMapping + "'")
-                .add("operationCategory=" + operationCategory)
+                .add("operationCategory='" + operationCategory + "'")
                 .add("bizNo='" + bizNo + "'")
-                .add("operationResult=" + operationResult)
+                .add("operationResult='" + operationResult + "'")
+                .add("targetExecutionTime='" + targetExecutionTime + "'")
                 .toString();
     }
 
@@ -166,6 +192,8 @@ public class LogRecord {
         private String operatorId;
 
         private String operatorName;
+
+        private String operatorIp;
 
         private String operationTarget;
 
@@ -196,6 +224,11 @@ public class LogRecord {
 
         public LogRecordBuilder withOperatorName(String operatorName) {
             this.operatorName = operatorName;
+            return this;
+        }
+
+        public LogRecordBuilder withOperatorIp(String operatorIp) {
+            this.operatorIp = operatorIp;
             return this;
         }
 
@@ -239,6 +272,7 @@ public class LogRecord {
             logRecord.setOperationLogId(operationLogId);
             logRecord.setOperatorId(operatorId);
             logRecord.setOperatorName(operatorName);
+            logRecord.setOperatorIp(operatorIp);
             logRecord.setOperationCategory(operationCategory);
             logRecord.setBizNo(bizNo);
             logRecord.setOperationTarget(operationTarget);
