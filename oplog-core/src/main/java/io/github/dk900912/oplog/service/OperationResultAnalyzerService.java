@@ -1,7 +1,5 @@
 package io.github.dk900912.oplog.service;
 
-import org.springframework.core.Ordered;
-
 /**
  * <h3> 目标方法执行结果分析器 </h3>
  *
