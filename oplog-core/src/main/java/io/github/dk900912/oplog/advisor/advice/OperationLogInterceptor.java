@@ -9,6 +9,7 @@ import io.github.dk900912.oplog.model.ParsableBizInfo;
 import io.github.dk900912.oplog.parser.BizAttributeBasedSpExprParser;
 import io.github.dk900912.oplog.parser.RequestMappingParser;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
+import io.github.dk900912.oplog.service.OperationResultAnalyzerService;
 import io.github.dk900912.oplog.service.OperatorService;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -30,6 +31,8 @@ public class OperationLogInterceptor implements MethodInterceptor {
     private OperatorService operatorService;
 
     private LogRecordPersistenceService logRecordPersistenceService;
+
+    private OperationResultAnalyzerService operationResultAnalyzerService;
 
     private final BizAttributeBasedSpExprParser bizAttributeBasedSpExprParser;
 
@@ -78,6 +81,10 @@ public class OperationLogInterceptor implements MethodInterceptor {
         this.logRecordPersistenceService = logRecordPersistenceService;
     }
 
+    public void setOperationResultAnalyzerService(OperationResultAnalyzerService operationResultAnalyzerService) {
+        this.operationResultAnalyzerService = operationResultAnalyzerService;
+    }
+
     // +------------------------------------------------+
     // |               private methods                  |
     // +------------------------------------------------+
@@ -93,9 +100,12 @@ public class OperationLogInterceptor implements MethodInterceptor {
         Operator operator = getOperator();
         Object result = methodInvocationResult.getResult();
         StopWatch performance = methodInvocationResult.getPerformance();
+        Throwable throwable = methodInvocationResult.getThrowable();
+        boolean isSuccess = analyzeOperationResult(throwable, result);
 
         Map<String, Object> operationLogAnnotationAttrMap = getOperationLogAnnotationAttr(method);
         String requestMapping = requestMappingParser.parse(method);
+        String tenant = (String) operationLogAnnotationAttrMap.get("tenant");
         BizCategory bizCategory = (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
         String originBizTarget = (String) operationLogAnnotationAttrMap.get("bizTarget");
         String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
@@ -103,13 +113,14 @@ public class OperationLogInterceptor implements MethodInterceptor {
         String bizNo = bizAttributeBasedSpExprParser.parse(new ParsableBizInfo(methodInvocation, result, originBizNo));
 
         return LogRecord.builder()
+                .withTenant(tenant)
                 .withOperatorId(operator.getOperatorId())
                 .withOperatorName(operator.getOperatorName())
                 .withOperationTarget(bizTarget)
                 .withOperationCategory(bizCategory)
                 .withBizNo(bizNo)
                 .withRequestMapping(requestMapping)
-                .withOperationResult(Objects.isNull(methodInvocationResult.getThrowable()))
+                .withOperationResult(isSuccess)
                 .withOperationTime(LocalDateTime.now())
                 .withTargetExecutionTime(performance.getTotalTimeMillis())
                 .build();
@@ -124,5 +135,9 @@ public class OperationLogInterceptor implements MethodInterceptor {
     private Operator getOperator() {
         return Optional.ofNullable(operatorService.getOperator())
                 .orElse(new Operator());
+    }
+
+    private boolean analyzeOperationResult(Throwable throwable, Object result) {
+        return operationResultAnalyzerService.analyzeOperationResult(throwable, result);
     }
 }

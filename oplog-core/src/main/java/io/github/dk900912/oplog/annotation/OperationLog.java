@@ -1,6 +1,7 @@
 package io.github.dk900912.oplog.annotation;
 
 import io.github.dk900912.oplog.model.BizCategory;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -17,6 +18,13 @@ import java.lang.annotation.Target;
 @Inherited
 @Documented
 public @interface OperationLog {
+    /**
+     * 租户隔离，此时的租户可以是控制器层级、包层级、服务层级的
+     *
+     * @return tenant
+     */
+    String tenant() default StringUtils.EMPTY;
+
     /**
      * 返回操作种类：新增、更新和删除等
      *

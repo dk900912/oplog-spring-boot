@@ -13,6 +13,11 @@ public class LogRecord {
     private String operationLogId;
 
     /**
+     * 租户隔离
+     */
+    private String tenant;
+
+    /**
      * 操作用户ID
      */
     private String operatorId;
@@ -84,6 +89,14 @@ public class LogRecord {
 
     public void setOperationLogId(String operationLogId) {
         this.operationLogId = operationLogId;
+    }
+
+    public String getTenant() {
+        return tenant;
+    }
+
+    public void setTenant(String tenant) {
+        this.tenant = tenant;
     }
 
     public String getOperatorId() {
@@ -169,6 +182,7 @@ public class LogRecord {
     @Override
     public String toString() {
         return new StringJoiner(", ", "[", "]")
+                .add("tenant='" + tenant + "'")
                 .add("operatorId='" + operatorId + "'")
                 .add("operatorName='" + operatorName + "'")
                 .add("operatorIp='" + operatorIp + "'")
@@ -188,6 +202,8 @@ public class LogRecord {
     public static final class LogRecordBuilder {
 
         private String operationLogId;
+
+        private String tenant;
 
         private String operatorId;
 
@@ -214,6 +230,11 @@ public class LogRecord {
 
         public LogRecordBuilder withOperationLogId(String operationLogId) {
             this.operationLogId = operationLogId;
+            return this;
+        }
+
+        public LogRecordBuilder withTenant(String tenant) {
+            this.tenant = tenant;
             return this;
         }
 
@@ -270,6 +291,7 @@ public class LogRecord {
         public LogRecord build() {
             LogRecord logRecord = new LogRecord();
             logRecord.setOperationLogId(operationLogId);
+            logRecord.setTenant(tenant);
             logRecord.setOperatorId(operatorId);
             logRecord.setOperatorName(operatorName);
             logRecord.setOperatorIp(operatorIp);

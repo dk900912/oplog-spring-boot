@@ -4,8 +4,10 @@ import io.github.dk900912.oplog.advisor.OperationLogPointcutAdvisor;
 import io.github.dk900912.oplog.advisor.advice.OperationLogInterceptor;
 import io.github.dk900912.oplog.advisor.pointcut.OperationLogPointcut;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
+import io.github.dk900912.oplog.service.OperationResultAnalyzerService;
 import io.github.dk900912.oplog.service.OperatorService;
 import io.github.dk900912.oplog.service.impl.DefaultLogRecordPersistenceServiceImpl;
+import io.github.dk900912.oplog.service.impl.DefaultOperationResultAnalyzerServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperatorServiceImpl;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -47,6 +49,12 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
     }
 
     @Bean
+    @ConditionalOnMissingBean(OperationResultAnalyzerService.class)
+    public OperationResultAnalyzerService operationResultAnalyzerService() {
+        return new DefaultOperationResultAnalyzerServiceImpl();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(OperatorService.class)
     public OperatorService operatorService() {
         return new DefaultOperatorServiceImpl();
@@ -69,10 +77,11 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
         OperationLogInterceptor operationLogInterceptor = new OperationLogInterceptor();
         OperatorService operatorService = operatorService();
         LogRecordPersistenceService logRecordPersistenceService = logRecordPersistenceService();
+        OperationResultAnalyzerService operationResultAnalyzerService = operationResultAnalyzerService();
         operationLogInterceptor.setOperatorService(operatorService);
         operationLogInterceptor.setLogRecordPersistenceService(logRecordPersistenceService);
+        operationLogInterceptor.setOperationResultAnalyzerService(operationResultAnalyzerService);
         operationLogPointcutAdvisor.setAdvice(operationLogInterceptor);
-
         Integer logPointcutAdvisorOrderFromAnnotation = Optional.<AnnotationAttributes>ofNullable(this.enableOperationLog)
                 .map(annotationAttributes -> annotationAttributes.<Integer>getNumber("order"))
                 .orElse(Ordered.LOWEST_PRECEDENCE);
