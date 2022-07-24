@@ -29,7 +29,7 @@ public class RequestMappingParser implements Parser<Method> {
             new ConcurrentHashMap<>(200);
 
     @Override
-    public String parse(Method target) {
+    public Object parse(Method target) {
         String requestMapping = cache.get(target);
         if (StringUtils.isNotEmpty(requestMapping)) {
             return requestMapping;
@@ -65,7 +65,7 @@ public class RequestMappingParser implements Parser<Method> {
                 cache.put(method, requestMapping);
                 return requestMapping;
             }
-        } catch (Throwable throwable) {
+        } catch (Exception throwable) {
             logger.warning("An error happened while parsing request mapping info");
         }
         return null;

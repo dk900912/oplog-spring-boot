@@ -6,9 +6,12 @@ import io.github.dk900912.oplog.advisor.pointcut.OperationLogPointcut;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperationResultAnalyzerService;
 import io.github.dk900912.oplog.service.OperatorService;
+import io.github.dk900912.oplog.service.PreviousContentSelector;
+import io.github.dk900912.oplog.service.PreviousContentSelectorFactory;
 import io.github.dk900912.oplog.service.impl.DefaultLogRecordPersistenceServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperationResultAnalyzerServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperatorServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -20,6 +23,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -34,8 +38,13 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
 
     private final OpLogProperties opLogProperties;
 
-    public OperationLogAutoConfigurationImportSelector(OpLogProperties opLogProperties) {
+    private final List<PreviousContentSelector> previousContentSelectors;
+
+    @Autowired
+    public OperationLogAutoConfigurationImportSelector(OpLogProperties opLogProperties,
+                                                       List<PreviousContentSelector> previousContentSelectors) {
         this.opLogProperties = opLogProperties;
+        this.previousContentSelectors = previousContentSelectors;
     }
 
     @Override
@@ -67,21 +76,31 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
     }
 
     @Bean
+    public PreviousContentSelectorFactory previousContentSelectorFactory() {
+        return new PreviousContentSelectorFactory(this.previousContentSelectors);
+    }
+
+    @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     public OperationLogPointcutAdvisor operationLogPointcutAdvisor() {
+
         OperationLogPointcutAdvisor operationLogPointcutAdvisor = new OperationLogPointcutAdvisor();
 
         OperationLogPointcut operationLogPointcut = new OperationLogPointcut();
         operationLogPointcutAdvisor.setPointcut(operationLogPointcut);
 
-        OperationLogInterceptor operationLogInterceptor = new OperationLogInterceptor();
+        OperationLogInterceptor operationLogInterceptor = new OperationLogInterceptor(opLogProperties.getTenant());
         OperatorService operatorService = operatorService();
         LogRecordPersistenceService logRecordPersistenceService = logRecordPersistenceService();
         OperationResultAnalyzerService operationResultAnalyzerService = operationResultAnalyzerService();
+        PreviousContentSelectorFactory previousContentSelectorFactory = previousContentSelectorFactory();
         operationLogInterceptor.setOperatorService(operatorService);
         operationLogInterceptor.setLogRecordPersistenceService(logRecordPersistenceService);
         operationLogInterceptor.setOperationResultAnalyzerService(operationResultAnalyzerService);
+        operationLogInterceptor.setPreviousContentSelectorFactory(previousContentSelectorFactory);
+
         operationLogPointcutAdvisor.setAdvice(operationLogInterceptor);
+
         Integer logPointcutAdvisorOrderFromAnnotation = Optional.<AnnotationAttributes>ofNullable(this.enableOperationLog)
                 .map(annotationAttributes -> annotationAttributes.<Integer>getNumber("order"))
                 .orElse(Ordered.LOWEST_PRECEDENCE);

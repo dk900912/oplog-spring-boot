@@ -1,22 +1,27 @@
 package io.github.dk900912.oplog.advisor.advice;
 
-import io.github.dk900912.oplog.annotation.OperationLog;
+import io.github.dk900912.oplog.context.LogRecordContextHolder;
 import io.github.dk900912.oplog.model.BizCategory;
 import io.github.dk900912.oplog.model.LogRecord;
 import io.github.dk900912.oplog.model.MethodInvocationResult;
+import io.github.dk900912.oplog.model.OperationLogInfo;
 import io.github.dk900912.oplog.model.Operator;
 import io.github.dk900912.oplog.model.ParsableBizInfo;
 import io.github.dk900912.oplog.parser.BizAttributeBasedSpExprParser;
+import io.github.dk900912.oplog.parser.OperationLogAnnotationAttributeMapParser;
 import io.github.dk900912.oplog.parser.RequestMappingParser;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperationResultAnalyzerService;
 import io.github.dk900912.oplog.service.OperatorService;
+import io.github.dk900912.oplog.service.PreviousContentSelector;
+import io.github.dk900912.oplog.service.PreviousContentSelectorFactory;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.springframework.core.annotation.AnnotationUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.MethodParameter;
 import org.springframework.util.StopWatch;
+import org.springframework.web.bind.annotation.RequestBody;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -26,7 +31,7 @@ import java.util.Optional;
 /**
  * @author dukui
  */
-public class OperationLogInterceptor implements MethodInterceptor {
+public final class OperationLogInterceptor implements MethodInterceptor {
 
     private OperatorService operatorService;
 
@@ -34,13 +39,21 @@ public class OperationLogInterceptor implements MethodInterceptor {
 
     private OperationResultAnalyzerService operationResultAnalyzerService;
 
+    private PreviousContentSelectorFactory previousContentSelectorFactory;
+
     private final BizAttributeBasedSpExprParser bizAttributeBasedSpExprParser;
 
     private final RequestMappingParser requestMappingParser;
 
-    public OperationLogInterceptor() {
+    private final OperationLogAnnotationAttributeMapParser operationLogAnnotationAttributeMapParser;
+
+    private final String tenant;
+
+    public OperationLogInterceptor(String tenant) {
         this.bizAttributeBasedSpExprParser = new BizAttributeBasedSpExprParser();
         this.requestMappingParser = new RequestMappingParser();
+        this.operationLogAnnotationAttributeMapParser = new OperationLogAnnotationAttributeMapParser();
+        this.tenant = tenant;
     }
 
     /**
@@ -50,6 +63,11 @@ public class OperationLogInterceptor implements MethodInterceptor {
      */
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
+
+        LogRecordContextHolder.setContext(LogRecordContextHolder.createEmptyContext());
+        
+        preProcessBeforeTargetExecution(invocation);
+
         Object result = null;
         Throwable throwable = null;
         StopWatch stopWatch = new StopWatch();
@@ -62,10 +80,12 @@ public class OperationLogInterceptor implements MethodInterceptor {
             stopWatch.stop();
         }
 
-        // 切面逻辑
-        persistOperationLog(new MethodInvocationResult(invocation, result, throwable, stopWatch));
+        try {
+            postProcessAfterTargetExecution(new MethodInvocationResult(invocation, result, throwable, stopWatch));
+        } finally {
+            LogRecordContextHolder.clearContext();
+        }
 
-        // 如果目标方法执行过程中抛出了异常，那么一定要重新抛出
         if (Objects.nonNull(throwable)) {
             throw throwable;
         }
@@ -85,11 +105,48 @@ public class OperationLogInterceptor implements MethodInterceptor {
         this.operationResultAnalyzerService = operationResultAnalyzerService;
     }
 
+    public void setPreviousContentSelectorFactory(PreviousContentSelectorFactory previousContentSelectorFactory) {
+        this.previousContentSelectorFactory = previousContentSelectorFactory;
+    }
+
+    public String getTenant() {
+        return this.tenant;
+    }
+
     // +------------------------------------------------+
     // |               private methods                  |
     // +------------------------------------------------+
 
-    private void persistOperationLog(MethodInvocationResult methodInvocationResult) {
+    private void preProcessBeforeTargetExecution(MethodInvocation invocation) {
+        @SuppressWarnings("unchecked")
+        OperationLogInfo operationLogInfo = new OperationLogInfo(
+                (Map<String, Object>) operationLogAnnotationAttributeMapParser.parse(invocation.getMethod()));
+
+        String bizNo = (String) bizAttributeBasedSpExprParser.parse(
+                new ParsableBizInfo(invocation, null, operationLogInfo.getOriginBizNo()));
+        String bizTarget = (String) bizAttributeBasedSpExprParser.parse(
+                new ParsableBizInfo(invocation, null, operationLogInfo.getOriginBizTarget()));
+        final LogRecord logRecord = LogRecord.builder()
+                .withBizNo(bizNo)
+                .withOperationCategory(operationLogInfo.getBizCategory())
+                .withOperationTarget(bizTarget)
+                .build();
+
+        if (BizCategory.UPDATE == operationLogInfo.getBizCategory()
+                && StringUtils.isNotEmpty(operationLogInfo.getPreviousContentSelectorName())) {
+            PreviousContentSelector previousContentSelector =
+                    previousContentSelectorFactory.getSelector(operationLogInfo.getPreviousContentSelectorName());
+            if (Objects.nonNull(previousContentSelector)) {
+                Object previousContent = previousContentSelector.selectPreviousContent(bizNo);
+                logRecord.setPreviousContent(previousContent);
+            }
+            logRecord.setCurrentContent(detectCurrentContent(invocation));
+        }
+        
+        LogRecordContextHolder.getContext().setLogRecord(logRecord);
+    }
+
+    private void postProcessAfterTargetExecution(MethodInvocationResult methodInvocationResult) {
         final LogRecord logRecord = encapsulateLogRecord(methodInvocationResult);
         logRecordPersistenceService.doLogRecordPersistence(logRecord);
     }
@@ -97,39 +154,22 @@ public class OperationLogInterceptor implements MethodInterceptor {
     private LogRecord encapsulateLogRecord(MethodInvocationResult methodInvocationResult) {
         MethodInvocation methodInvocation = methodInvocationResult.getMethodInvocation();
         Method method = methodInvocation.getMethod();
-        Operator operator = getOperator();
         Object result = methodInvocationResult.getResult();
         StopWatch performance = methodInvocationResult.getPerformance();
         Throwable throwable = methodInvocationResult.getThrowable();
+        LogRecord logRecord = LogRecordContextHolder.getContext().getLogRecord();
+
+        Operator operator = getOperator();
         boolean isSuccess = analyzeOperationResult(throwable, result);
+        String requestMapping = (String) requestMappingParser.parse(method);
 
-        Map<String, Object> operationLogAnnotationAttrMap = getOperationLogAnnotationAttr(method);
-        String requestMapping = requestMappingParser.parse(method);
-        String tenant = (String) operationLogAnnotationAttrMap.get("tenant");
-        BizCategory bizCategory = (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
-        String originBizTarget = (String) operationLogAnnotationAttrMap.get("bizTarget");
-        String originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
-        String bizTarget = bizAttributeBasedSpExprParser.parse(new ParsableBizInfo(methodInvocation, result, originBizTarget));
-        String bizNo = bizAttributeBasedSpExprParser.parse(new ParsableBizInfo(methodInvocation, result, originBizNo));
-
-        return LogRecord.builder()
-                .withTenant(tenant)
-                .withOperatorId(operator.getOperatorId())
-                .withOperatorName(operator.getOperatorName())
-                .withOperationTarget(bizTarget)
-                .withOperationCategory(bizCategory)
-                .withBizNo(bizNo)
-                .withRequestMapping(requestMapping)
-                .withOperationResult(isSuccess)
-                .withOperationTime(LocalDateTime.now())
-                .withTargetExecutionTime(performance.getTotalTimeMillis())
-                .build();
-    }
-
-    private Map<String, Object> getOperationLogAnnotationAttr(Method method) {
-        Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);
-        // Never null
-        return AnnotationUtils.getAnnotationAttributes(operationLogAnnotation);
+        return logRecord.setTenant(getTenant())
+                .setOperatorId(operator.getOperatorId())
+                .setOperatorName(operator.getOperatorName())
+                .setRequestMapping(requestMapping)
+                .setOperationResult(isSuccess)
+                .setOperationTime(LocalDateTime.now())
+                .setTargetExecutionTime(performance.getTotalTimeMillis());
     }
 
     private Operator getOperator() {
@@ -139,5 +179,16 @@ public class OperationLogInterceptor implements MethodInterceptor {
 
     private boolean analyzeOperationResult(Throwable throwable, Object result) {
         return operationResultAnalyzerService.analyzeOperationResult(throwable, result);
+    }
+
+    private Object detectCurrentContent(MethodInvocation invocation) {
+        Object[] args = invocation.getArguments();
+        for (int i = 0; i < args.length; i++) {
+            MethodParameter methodParameter = new MethodParameter(invocation.getMethod(), i);
+            if (methodParameter.hasParameterAnnotation(RequestBody.class)) {
+                return args[i];
+            }
+        }
+        return null;
     }
 }

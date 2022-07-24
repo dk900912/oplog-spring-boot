@@ -9,7 +9,9 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  */
 @ConfigurationProperties(prefix = OpLogProperties.OPLOG_PREFIX)
 public class OpLogProperties {
-    public static final String OPLOG_PREFIX = "oplog";
+
+    public static final String OPLOG_PREFIX = "spring.oplog";
+
     /**
      * 是否启用操作日志组件，默认值为 true
      */
@@ -20,6 +22,11 @@ public class OpLogProperties {
      */
     @NestedConfigurationProperty
     private Advisor advisor;
+
+    /**
+     * 多租户隔离
+     */
+    private String tenant;
 
     public Boolean getEnabled() {
         return enabled;
@@ -35,6 +42,14 @@ public class OpLogProperties {
 
     public void setAdvisor(Advisor advisor) {
         this.advisor = advisor;
+    }
+
+    public String getTenant() {
+        return tenant;
+    }
+
+    public void setTenant(String tenant) {
+        this.tenant = tenant;
     }
 
     public static class Advisor {

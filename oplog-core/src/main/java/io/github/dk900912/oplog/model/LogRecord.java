@@ -83,100 +83,140 @@ public class LogRecord {
      */
     private Long targetExecutionTime;
 
+    /**
+     * 更新场景下，更新前的状态
+     */
+    private Object previousContent;
+
+    /**
+     * 更新场景下，更新后的状态
+     */
+    private Object currentContent;
+
     public String getOperationLogId() {
         return operationLogId;
     }
 
-    public void setOperationLogId(String operationLogId) {
+    public LogRecord setOperationLogId(String operationLogId) {
         this.operationLogId = operationLogId;
+        return this;
     }
 
     public String getTenant() {
         return tenant;
     }
 
-    public void setTenant(String tenant) {
+    public LogRecord setTenant(String tenant) {
         this.tenant = tenant;
+        return this;
     }
 
     public String getOperatorId() {
         return operatorId;
     }
 
-    public void setOperatorId(String operatorId) {
+    public LogRecord setOperatorId(String operatorId) {
         this.operatorId = operatorId;
+        return this;
     }
 
     public String getOperatorName() {
         return operatorName;
     }
 
-    public void setOperatorName(String operatorName) {
+    public LogRecord setOperatorName(String operatorName) {
         this.operatorName = operatorName;
+        return this;
     }
 
     public String getOperatorIp() {
         return operatorIp;
     }
 
-    public void setOperatorIp(String operatorIp) {
+    public LogRecord setOperatorIp(String operatorIp) {
         this.operatorIp = operatorIp;
+        return this;
     }
 
     public String getOperationTarget() {
         return operationTarget;
     }
 
-    public void setOperationTarget(String operationTarget) {
+    public LogRecord setOperationTarget(String operationTarget) {
         this.operationTarget = operationTarget;
+        return this;
     }
 
     public BizCategory getOperationCategory() {
         return operationCategory;
     }
 
-    public void setOperationCategory(BizCategory operationCategory) {
+    public LogRecord setOperationCategory(BizCategory operationCategory) {
         this.operationCategory = operationCategory;
+        return this;
     }
 
     public String getBizNo() {
         return bizNo;
     }
 
-    public void setBizNo(String bizNo) {
+    public LogRecord setBizNo(String bizNo) {
         this.bizNo = bizNo;
+        return this;
     }
 
     public boolean isOperationResult() {
         return operationResult;
     }
 
-    public void setOperationResult(boolean operationResult) {
+    public LogRecord setOperationResult(boolean operationResult) {
         this.operationResult = operationResult;
+        return this;
     }
 
     public String getRequestMapping() {
         return requestMapping;
     }
 
-    public void setRequestMapping(String requestMapping) {
+    public LogRecord setRequestMapping(String requestMapping) {
         this.requestMapping = requestMapping;
+        return this;
     }
 
     public LocalDateTime getOperationTime() {
         return operationTime;
     }
 
-    public void setOperationTime(LocalDateTime operationTime) {
+    public LogRecord setOperationTime(LocalDateTime operationTime) {
         this.operationTime = operationTime;
+        return this;
     }
 
     public Long getTargetExecutionTime() {
         return targetExecutionTime;
     }
 
-    public void setTargetExecutionTime(Long targetExecutionTime) {
+    public LogRecord setTargetExecutionTime(Long targetExecutionTime) {
         this.targetExecutionTime = targetExecutionTime;
+        return this;
+    }
+
+    public Object getPreviousContent() {
+        return previousContent;
+    }
+
+    public LogRecord setPreviousContent(Object previousContent) {
+        this.previousContent = previousContent;
+        return this;
+    }
+
+    public Object getCurrentContent() {
+        return currentContent;
+    }
+
+    public LogRecord setCurrentContent(Object currentContent) {
+        this.currentContent = currentContent;
+        return this;
     }
 
     @Override
@@ -192,6 +232,8 @@ public class LogRecord {
                 .add("bizNo='" + bizNo + "'")
                 .add("operationResult='" + operationResult + "'")
                 .add("targetExecutionTime='" + targetExecutionTime + "'")
+                .add("previousContent='" + previousContent + "'")
+                .add("currentContent='" + currentContent + "'")
                 .toString();
     }
 
@@ -224,6 +266,10 @@ public class LogRecord {
         private LocalDateTime operationTime;
 
         private Long targetExecutionTime;
+
+        private Object previousContent;
+
+        private Object currentContent;
 
         private LogRecordBuilder() {
         }
@@ -288,6 +334,16 @@ public class LogRecord {
             return this;
         }
 
+        public LogRecordBuilder withPreviousContent(Object previousContent) {
+            this.previousContent = previousContent;
+            return this;
+        }
+
+        public LogRecordBuilder withCurrentContent(Object currentContent) {
+            this.currentContent = currentContent;
+            return this;
+        }
+
         public LogRecord build() {
             LogRecord logRecord = new LogRecord();
             logRecord.setOperationLogId(operationLogId);
@@ -302,6 +358,8 @@ public class LogRecord {
             logRecord.setOperationResult(operationResult);
             logRecord.setOperationTime(operationTime);
             logRecord.setTargetExecutionTime(targetExecutionTime);
+            logRecord.setPreviousContent(previousContent);
+            logRecord.setCurrentContent(currentContent);
             return logRecord;
         }
     }

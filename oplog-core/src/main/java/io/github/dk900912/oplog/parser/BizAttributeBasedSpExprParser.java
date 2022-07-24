@@ -36,7 +36,7 @@ public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
     private static final ExpressionParser expressionParser = new SpelExpressionParser();
 
     @Override
-    public String parse(ParsableBizInfo parsableBizInfo) {
+    public Object parse(ParsableBizInfo parsableBizInfo) {
         final Object result = parsableBizInfo.getResult();
         final String originParsableTarget = parsableBizInfo.getOriginParsableTarget();
         final MethodInvocation methodInvocation = parsableBizInfo.getMethodInvocation();
