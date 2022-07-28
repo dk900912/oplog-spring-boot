@@ -12,7 +12,7 @@ public class LogRecordContextHolder {
 
     public static final String MODE_THREADLOCAL = "MODE_THREADLOCAL";
     public static final String MODE_INHERITABLETHREADLOCAL = "MODE_INHERITABLETHREADLOCAL";
-    public static final String SYSTEM_PROPERTY = "spring.oplog.strategy";
+    public static final String SYSTEM_PROPERTY = "spring.oplog.context.strategy";
     private static String strategyName = System.getProperty(SYSTEM_PROPERTY);
     private static LogRecordContextHolderStrategy strategy;
 

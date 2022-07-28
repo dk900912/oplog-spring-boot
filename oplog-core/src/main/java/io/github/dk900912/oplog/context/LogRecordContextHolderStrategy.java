@@ -13,7 +13,7 @@ public interface LogRecordContextHolderStrategy {
     /**
      * Obtains the current context.
      *
-     * @return a context (create a default implementation if necessary)
+     * @return a context
      */
     LogRecordContext getContext();
 
