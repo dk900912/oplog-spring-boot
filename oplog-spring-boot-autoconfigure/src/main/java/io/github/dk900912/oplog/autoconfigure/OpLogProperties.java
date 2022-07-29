@@ -13,18 +13,18 @@ public class OpLogProperties {
     public static final String OPLOG_PREFIX = "spring.oplog";
 
     /**
-     * 是否启用操作日志组件，默认值为 true
+     * Whether oplog component enabled, default true.
      */
     private Boolean enabled = true;
 
     /**
-     * {@link OperationLogPointcutAdvisor} 优先级
+     * {@link OperationLogPointcutAdvisor} priority
      */
     @NestedConfigurationProperty
     private Advisor advisor;
 
     /**
-     * 多租户隔离
+     * multi-tenant
      */
     private String tenant;
 

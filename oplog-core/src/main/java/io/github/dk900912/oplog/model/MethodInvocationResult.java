@@ -1,5 +1,7 @@
 package io.github.dk900912.oplog.model;
 
+import io.github.dk900912.oplog.support.MethodInvocationOperationLogCallback;
+import io.github.dk900912.oplog.support.OperationLogCallback;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.util.StopWatch;
 
@@ -26,6 +28,17 @@ public class MethodInvocationResult {
         this(methodInvocation, result, throwable);
         this.performance = performance;
     }
+
+    public MethodInvocationResult(OperationLogCallback<?, ?> operationLogCallback, Object result, Throwable throwable, StopWatch performance) {
+        this(
+                operationLogCallback instanceof MethodInvocationOperationLogCallback ?
+                        ((MethodInvocationOperationLogCallback<?, ?>) operationLogCallback).getInvocation() : null,
+                result,
+                throwable
+        );
+        this.performance = performance;
+    }
+
 
     public MethodInvocation getMethodInvocation() {
         return methodInvocation;

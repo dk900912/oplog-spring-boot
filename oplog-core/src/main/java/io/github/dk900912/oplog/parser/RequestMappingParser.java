@@ -2,6 +2,8 @@ package io.github.dk900912.oplog.parser;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
@@ -13,17 +15,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static io.github.dk900912.oplog.constant.Constants.REQUEST_MAPPING_DELIMITER;
+
 /**
- * <h3> RequestMapping 解析器 </h3>
+ * Parsing {@link RequestMapping} annotation's path attribute.
  *
  * @author dukui
  */
 public class RequestMappingParser implements Parser<Method> {
 
-    private static final Logger logger = Logger.getLogger(RequestMappingParser.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(RequestMappingParser.class);
 
     private static final ConcurrentHashMap<Method, String> cache =
             new ConcurrentHashMap<>(200);
@@ -46,7 +49,7 @@ public class RequestMappingParser implements Parser<Method> {
             if (Objects.nonNull(requestMappingOnClass)) {
                 String[] pathArrayOnClass = requestMappingOnClass.path();
                 if (ArrayUtils.isNotEmpty(pathArrayOnClass)) {
-                    list.addAll(Arrays.asList(StringUtils.split(pathArrayOnClass[0], "/")));
+                    list.addAll(Arrays.asList(StringUtils.split(pathArrayOnClass[0], REQUEST_MAPPING_DELIMITER)));
                 }
             }
 
@@ -54,19 +57,19 @@ public class RequestMappingParser implements Parser<Method> {
             if (Objects.nonNull(requestMappingOnMethod)) {
                 String[] pathArrayOnMethod = requestMappingOnMethod.path();
                 if (ArrayUtils.isNotEmpty(pathArrayOnMethod)) {
-                    list.addAll(Arrays.asList(StringUtils.split(pathArrayOnMethod[0], "/")));
+                    list.addAll(Arrays.asList(StringUtils.split(pathArrayOnMethod[0], REQUEST_MAPPING_DELIMITER)));
                 }
             }
 
             if (!CollectionUtils.isEmpty(list)) {
                 String requestMapping = list.stream()
                         .filter(StringUtils::isNotEmpty)
-                        .collect(Collectors.joining("/", "/", ""));
+                        .collect(Collectors.joining(REQUEST_MAPPING_DELIMITER, REQUEST_MAPPING_DELIMITER, ""));
                 cache.put(method, requestMapping);
                 return requestMapping;
             }
-        } catch (Exception throwable) {
-            logger.warning("An error happened while parsing request mapping info");
+        } catch (Exception exception) {
+            logger.warn("An error happened while parsing request mapping info.");
         }
         return null;
     }

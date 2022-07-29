@@ -12,11 +12,6 @@ import java.util.Objects;
  * @author dukui
  */
 public class OperationLogPointcut extends StaticMethodMatcherPointcut {
-    /**
-     * @param method       目标方法
-     * @param targetClass  目标类
-     * @return             该目标方法是否由 @OperationLog 注解标记，若是，则返回 true
-     */
     @Override
     public boolean matches(Method method, Class<?> targetClass) {
         Annotation operationLogAnnotation = AnnotationUtils.findAnnotation(method, OperationLog.class);

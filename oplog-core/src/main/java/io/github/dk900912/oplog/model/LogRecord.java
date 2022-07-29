@@ -7,24 +7,13 @@ import java.util.StringJoiner;
  * @author dukui
  */
 public class LogRecord {
-    /**
-     * 操作日志唯一标识，一般用于数据库主键
-     */
+
     private String operationLogId;
 
-    /**
-     * 租户隔离
-     */
     private String tenant;
 
-    /**
-     * 操作用户ID
-     */
     private String operatorId;
 
-    /**
-     * 操作用户名
-     */
     private String operatorName;
 
     /**
@@ -38,34 +27,18 @@ public class LogRecord {
      *     return StringUtils.isBlank(nginxHeader) ? request.getRemoteAddr() : nginxHeader;
      * }
      * </pre>
-     *
-     * 操作用户IP
      */
     private String operatorIp;
 
-    /**
-     * 被操作对象中文标识，比如：订单、用户、商品等
-     */
     private String operationTarget;
 
-    /**
-     * 业务操作类型，比如：订购、退订等
-     */
     private BizCategory operationCategory;
 
-    /**
-     * 被操作对象的业务唯一标识，一般是业务对象的唯一标识，比如：订单ID、用户ID、商品ID等
-     */
     private String bizNo;
 
-    /**
-     * 操作日志结果：true，即成功；false，即失败
-     */
     private boolean operationResult;
 
     /**
-     * 请求路径
-     *
      * <li> {@link org.springframework.web.bind.annotation.GetMapping#path()}
      * <li> {@link org.springframework.web.bind.annotation.PostMapping#path()}
      * <li> {@link org.springframework.web.bind.annotation.PutMapping#path()}
@@ -73,24 +46,12 @@ public class LogRecord {
      */
     private String requestMapping;
 
-    /**
-     * 操作日志发生时间
-     */
     private LocalDateTime operationTime;
 
-    /**
-     * 目标方法执行时间
-     */
     private Long targetExecutionTime;
 
-    /**
-     * 更新场景下，更新前的状态
-     */
     private Object previousContent;
 
-    /**
-     * 更新场景下，更新后的状态
-     */
     private Object currentContent;
 
     public String getOperationLogId() {
@@ -363,4 +324,5 @@ public class LogRecord {
             return logRecord;
         }
     }
+
 }

@@ -6,11 +6,12 @@ import io.github.dk900912.oplog.advisor.pointcut.OperationLogPointcut;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperationResultAnalyzerService;
 import io.github.dk900912.oplog.service.OperatorService;
-import io.github.dk900912.oplog.service.PreviousContentSelector;
-import io.github.dk900912.oplog.service.PreviousContentSelectorFactory;
+import io.github.dk900912.oplog.service.Selector;
+import io.github.dk900912.oplog.service.SelectorFactory;
 import io.github.dk900912.oplog.service.impl.DefaultLogRecordPersistenceServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperationResultAnalyzerServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperatorServiceImpl;
+import io.github.dk900912.oplog.support.OperationLogTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -38,13 +39,13 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
 
     private final OpLogProperties opLogProperties;
 
-    private final List<PreviousContentSelector> previousContentSelectors;
+    private final List<Selector> selectors;
 
     @Autowired
     public OperationLogAutoConfigurationImportSelector(OpLogProperties opLogProperties,
-                                                       List<PreviousContentSelector> previousContentSelectors) {
+                                                       List<Selector> selectors) {
         this.opLogProperties = opLogProperties;
-        this.previousContentSelectors = previousContentSelectors;
+        this.selectors = selectors;
     }
 
     @Override
@@ -76,8 +77,22 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
     }
 
     @Bean
-    public PreviousContentSelectorFactory previousContentSelectorFactory() {
-        return new PreviousContentSelectorFactory(this.previousContentSelectors);
+    public SelectorFactory selectorFactory() {
+        return new SelectorFactory(this.selectors);
+    }
+
+    @Bean
+    public OperationLogTemplate operationLogTemplate() {
+        OperationLogTemplate operationLogTemplate = new OperationLogTemplate(opLogProperties.getTenant());
+        OperatorService operatorService = operatorService();
+        LogRecordPersistenceService logRecordPersistenceService = logRecordPersistenceService();
+        OperationResultAnalyzerService operationResultAnalyzerService = operationResultAnalyzerService();
+        SelectorFactory selectorFactory = selectorFactory();
+        operationLogTemplate.setOperatorService(operatorService);
+        operationLogTemplate.setLogRecordPersistenceService(logRecordPersistenceService);
+        operationLogTemplate.setOperationResultAnalyzerService(operationResultAnalyzerService);
+        operationLogTemplate.setSelectorFactory(selectorFactory);
+        return operationLogTemplate;
     }
 
     @Bean
@@ -88,18 +103,7 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
 
         OperationLogPointcut operationLogPointcut = new OperationLogPointcut();
         operationLogPointcutAdvisor.setPointcut(operationLogPointcut);
-
-        OperationLogInterceptor operationLogInterceptor = new OperationLogInterceptor(opLogProperties.getTenant());
-        OperatorService operatorService = operatorService();
-        LogRecordPersistenceService logRecordPersistenceService = logRecordPersistenceService();
-        OperationResultAnalyzerService operationResultAnalyzerService = operationResultAnalyzerService();
-        PreviousContentSelectorFactory previousContentSelectorFactory = previousContentSelectorFactory();
-        operationLogInterceptor.setOperatorService(operatorService);
-        operationLogInterceptor.setLogRecordPersistenceService(logRecordPersistenceService);
-        operationLogInterceptor.setOperationResultAnalyzerService(operationResultAnalyzerService);
-        operationLogInterceptor.setPreviousContentSelectorFactory(previousContentSelectorFactory);
-
-        operationLogPointcutAdvisor.setAdvice(operationLogInterceptor);
+        operationLogPointcutAdvisor.setAdvice(new OperationLogInterceptor(operationLogTemplate()));
 
         Integer logPointcutAdvisorOrderFromAnnotation = Optional.<AnnotationAttributes>ofNullable(this.enableOperationLog)
                 .map(annotationAttributes -> annotationAttributes.<Integer>getNumber("order"))

@@ -10,25 +10,25 @@ import java.util.stream.Collectors;
 /**
  * @author dukui
  */
-public class PreviousContentSelectorFactory {
+public class SelectorFactory {
 
-    private final Map<String, PreviousContentSelector> selectorMap = new ConcurrentHashMap<>(32);
+    private final Map<String, Selector> selectorMap = new ConcurrentHashMap<>(32);
 
-    public PreviousContentSelectorFactory(List<PreviousContentSelector> selectorList) {
+    public SelectorFactory(List<Selector> selectorList) {
         selectorMap.putAll(
                 Optional.ofNullable(selectorList)
                         .orElse(new ArrayList<>(0))
                         .stream()
                         .collect(
                                 Collectors.toMap(
-                                        PreviousContentSelector::selectorName,
+                                        Selector::selectorName,
                                         selector -> selector,
                                         (selector1, selector2) -> selector1
                                 )
                         ));
     }
 
-    public PreviousContentSelector getSelector(String selectorName) {
+    public Selector getSelector(String selectorName) {
         return selectorMap.get(selectorName);
     }
 }

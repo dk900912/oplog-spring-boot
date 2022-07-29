@@ -1,7 +1,7 @@
 package io.github.dk900912.oplog.annotation;
 
 import io.github.dk900912.oplog.model.BizCategory;
-import io.github.dk900912.oplog.service.PreviousContentSelector;
+import io.github.dk900912.oplog.service.Selector;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -20,30 +20,22 @@ import java.lang.annotation.Target;
 public @interface OperationLog {
 
     /**
-     * 返回操作种类：新增、更新和删除等
-     *
-     * @return bizCategory
+     * @return business operation category
      */
     BizCategory bizCategory();
 
     /**
-     * 返回业务对象，如：订单、用户、商品等
-     *
-     * @return bizTarget
+     * @return business operation target
      */
     String bizTarget();
 
     /**
-     * 返回业务唯一标识，支持 SpEL 表达式
-     *
-     * @return bizNo
+     * @return business operation identifier
      */
     String bizNo();
 
     /**
-     * 在更新场景中，用于查询之前的内容
-     *
-     * @return {@link PreviousContentSelector#selectorName()}
+     * @return {@link Selector#selectorName()}
      */
-    String previousContentSelectorName() default "";
+    String selectorName() default "";
 }

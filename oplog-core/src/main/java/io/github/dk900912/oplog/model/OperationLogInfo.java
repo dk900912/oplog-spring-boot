@@ -2,6 +2,14 @@ package io.github.dk900912.oplog.model;
 
 import java.util.Map;
 
+import static io.github.dk900912.oplog.constant.Constants.BIZ_CATEGORY;
+import static io.github.dk900912.oplog.constant.Constants.BIZ_NO;
+import static io.github.dk900912.oplog.constant.Constants.BIZ_TARGET;
+import static io.github.dk900912.oplog.constant.Constants.SELECTOR_NAME;
+
+/**
+ * @author dukui
+ */
 public class OperationLogInfo {
 
     private BizCategory bizCategory;
@@ -10,13 +18,19 @@ public class OperationLogInfo {
 
     private String originBizNo;
 
-    private String previousContentSelectorName;
+    private String selectorName;
 
     public OperationLogInfo(Map<String, Object> operationLogAnnotationAttrMap) {
-        this.bizCategory = (BizCategory) operationLogAnnotationAttrMap.get("bizCategory");
-        this.originBizTarget = (String) operationLogAnnotationAttrMap.get("bizTarget");
-        this.originBizNo = (String) operationLogAnnotationAttrMap.get("bizNo");
-        this.previousContentSelectorName = (String) operationLogAnnotationAttrMap.get("previousContentSelectorName");
+        this.bizCategory = (BizCategory) operationLogAnnotationAttrMap.get(BIZ_CATEGORY);
+        this.originBizTarget = (String) operationLogAnnotationAttrMap.get(BIZ_TARGET);
+        this.originBizNo = (String) operationLogAnnotationAttrMap.get(BIZ_NO);
+        this.selectorName = (String) operationLogAnnotationAttrMap.get(SELECTOR_NAME);
+    }
+
+    public OperationLogInfo(BizCategory bizCategory, String originBizNo, String selectorName) {
+        this.bizCategory = bizCategory;
+        this.originBizNo = originBizNo;
+        this.selectorName = selectorName;
     }
 
     public BizCategory getBizCategory() {
@@ -43,11 +57,12 @@ public class OperationLogInfo {
         this.originBizNo = originBizNo;
     }
 
-    public String getPreviousContentSelectorName() {
-        return previousContentSelectorName;
+    public String getSelectorName() {
+        return selectorName;
     }
 
-    public void setPreviousContentSelectorName(String previousContentSelectorName) {
-        this.previousContentSelectorName = previousContentSelectorName;
+    public void setSelectorName(String selectorName) {
+        this.selectorName = selectorName;
     }
+
 }

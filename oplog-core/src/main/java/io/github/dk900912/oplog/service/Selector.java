@@ -3,9 +3,9 @@ package io.github.dk900912.oplog.service;
 /**
  * @author dukui
  */
-public interface PreviousContentSelector {
+public interface Selector {
 
     String selectorName();
 
-    Object selectPreviousContent(String bizNo);
+    Object select(String bizNo);
 }

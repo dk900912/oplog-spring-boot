@@ -3,6 +3,8 @@ package io.github.dk900912.oplog.parser;
 import io.github.dk900912.oplog.model.ParsableBizInfo;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.expression.MethodBasedEvaluationContext;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.expression.EvaluationException;
@@ -13,16 +15,17 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
-import java.util.logging.Logger;
+
+import static io.github.dk900912.oplog.constant.Constants.SPRING_EL_PREFIX;
 
 /**
- * <h3> 基于 Spring EL、面向 BizTarget 和 BizNo 的解析器 </h3>
+ * Parsing biz-no and biz-target which implemented by spring expression language.
  *
  * @author dukui
  */
 public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
 
-    private static final Logger logger = Logger.getLogger(BizAttributeBasedSpExprParser.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(BizAttributeBasedSpExprParser.class);
 
     /**
      * thread-safe
@@ -42,12 +45,12 @@ public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
         final MethodInvocation methodInvocation = parsableBizInfo.getMethodInvocation();
         final Method method = methodInvocation.getMethod();
         final Object[] arguments = methodInvocation.getArguments();
-        if (StringUtils.isEmpty(originParsableTarget) || !originParsableTarget.startsWith("#")) {
+        if (StringUtils.isEmpty(originParsableTarget) || !originParsableTarget.startsWith(SPRING_EL_PREFIX)) {
             return originParsableTarget;
         }
 
-        MethodBasedEvaluationContext methodBasedEvaluationContext = new MethodBasedEvaluationContext(
-                null, method, arguments, parameterNameDiscoverer);
+        MethodBasedEvaluationContext methodBasedEvaluationContext =
+                new MethodBasedEvaluationContext(null, method, arguments, parameterNameDiscoverer);
         Optional.<Object>ofNullable(result)
                 .map(Object::getClass)
                 .map(Class::getSimpleName)
@@ -62,7 +65,7 @@ public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
             Expression expression = expressionParser.parseExpression(originParsableTarget);
             bizNo = expression.getValue(methodBasedEvaluationContext, String.class);
         } catch (ParseException | EvaluationException e) {
-            logger.warning("An error happened while parsing biz-target or biz-no");
+            logger.warn("An error happened while parsing biz-target or biz-no.");
         }
         return bizNo;
     }
