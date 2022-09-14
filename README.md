@@ -1,5 +1,3 @@
-[![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?username=dk900912)](https://github.com/anuraghazra/github-readme-stats)
- 
 > 若在使用过程中有任何疑问，请搜索微信公众号：*程序猿杜小头*，与我联系！！！
 
 ## 如何使用
@@ -8,7 +6,7 @@
 <dependency>
 	<groupId>io.github.dk900912</groupId>
 	<artifactId>oplog-spring-boot-starter</artifactId>
-	<version>1.2</version>
+	<version>1.3</version>
 </dependency>
 ```
 #### 声明式风格

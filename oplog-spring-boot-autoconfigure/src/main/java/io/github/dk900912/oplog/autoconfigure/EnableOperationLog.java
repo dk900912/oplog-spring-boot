@@ -22,7 +22,9 @@ public @interface EnableOperationLog {
      * <p>Indicate the ordering of the execution of the operation-log advisor
      * when multiple advices are applied at a specific join point.</p>
      * <br>
-     * The default is {@link Ordered#LOWEST_PRECEDENCE}.
+     * Higher values are interpreted as lower priority. The default is {@link Ordered#LOWEST_PRECEDENCE}.
+     *
+     * @return the order value
      */
     int order() default Ordered.LOWEST_PRECEDENCE;
 }

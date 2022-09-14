@@ -1,33 +1,59 @@
 package io.github.dk900912.oplog.context;
 
 import io.github.dk900912.oplog.support.OperationLogOperations;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.StringUtils;
+
+import java.lang.reflect.Constructor;
+
+import static io.github.dk900912.oplog.constant.Constants.CONTEXT_STRATEGY_SYSTEM_PROPERTY;
+import static io.github.dk900912.oplog.constant.Constants.DEFAULT_CONTEXT_STRATEGY;
 
 /**
- * The mutator methods ({@link #clear()} and {@link #register(OperationLogContext)}
+ * The methods {@link #clear()} and {@link #register(OperationLogContext)}
  * should not be used except internally by {@link OperationLogOperations} implementations.
  *
  * @author dukui
  */
-public final class OperationLogSynchronizationManager {
+public class OperationLogSynchronizationManager {
+
+	private static String strategyName = System.getProperty(CONTEXT_STRATEGY_SYSTEM_PROPERTY);
+
+	private static OperationLogContextImplStrategy strategy;
+
+	static {
+		initialize();
+	}
 
 	private OperationLogSynchronizationManager() {}
 
-	private static final ThreadLocal<OperationLogContext> OPERATION_LOG_CONTEXT = new ThreadLocal<>();
+	private static void initialize() {
+		if (!StringUtils.hasText(strategyName)) {
+			strategyName = DEFAULT_CONTEXT_STRATEGY;
+		}
+
+		if (strategyName.equals(DEFAULT_CONTEXT_STRATEGY)) {
+			strategy = new ThreadLocalOperationLogContextImplStrategy();
+		} else {
+			try {
+				Class<?> clazz = Class.forName(strategyName);
+				Constructor<?> customStrategy = clazz.getConstructor();
+				strategy = (OperationLogContextImplStrategy) customStrategy.newInstance();
+			} catch (Exception ex) {
+				ReflectionUtils.handleReflectionException(ex);
+			}
+		}
+	}
 
 	public static OperationLogContext getContext() {
-		return OPERATION_LOG_CONTEXT.get();
+		return strategy.getContext();
 	}
 
 	public static OperationLogContext register(OperationLogContext context) {
-		OperationLogContext oldContext = getContext();
-		OPERATION_LOG_CONTEXT.set(context);
-		return oldContext;
+		return strategy.setContext(context);
 	}
 
 	public static OperationLogContext clear() {
-		OperationLogContext value = getContext();
-		OperationLogContext parent = value == null ? null : value.getParent();
-		OPERATION_LOG_CONTEXT.set(parent);
-		return value;
+		return strategy.clearContext();
 	}
 }

@@ -19,4 +19,8 @@ public final class Constants {
 
     public static final String REQUEST_MAPPING_DELIMITER = "/";
 
+    public static final String DEFAULT_CONTEXT_STRATEGY = "THREAD_LOCAL";
+
+    public static final String CONTEXT_STRATEGY_SYSTEM_PROPERTY = "spring.oplog.context.strategy";
+
 }
