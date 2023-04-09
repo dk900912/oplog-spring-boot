@@ -6,16 +6,17 @@ import io.github.dk900912.oplog.advisor.pointcut.OperationLogPointcut;
 import io.github.dk900912.oplog.service.LogRecordPersistenceService;
 import io.github.dk900912.oplog.service.OperationResultAnalyzerService;
 import io.github.dk900912.oplog.service.OperatorService;
-import io.github.dk900912.oplog.service.Selector;
-import io.github.dk900912.oplog.service.SelectorFactory;
 import io.github.dk900912.oplog.service.impl.DefaultLogRecordPersistenceServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperationResultAnalyzerServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperatorServiceImpl;
 import io.github.dk900912.oplog.support.OperationLogTemplate;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
@@ -24,7 +25,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -33,19 +33,17 @@ import java.util.Optional;
  */
 @Configuration(proxyBeanMethods = true)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-public class OperationLogAutoConfigurationImportSelector implements ImportAware {
+public class OperationLogAutoConfigurationImportSelector implements ImportAware, ApplicationContextAware {
 
     protected AnnotationAttributes enableOperationLog;
 
+    protected ApplicationContext applicationContext;
+
     private final OpLogProperties opLogProperties;
 
-    private final List<Selector> selectors;
-
     @Autowired
-    public OperationLogAutoConfigurationImportSelector(OpLogProperties opLogProperties,
-                                                       List<Selector> selectors) {
+    public OperationLogAutoConfigurationImportSelector(OpLogProperties opLogProperties) {
         this.opLogProperties = opLogProperties;
-        this.selectors = selectors;
     }
 
     @Override
@@ -56,6 +54,11 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
             throw new IllegalArgumentException(
                     "@EnableOperationLog is not present on importing class " + importMetadata.getClassName());
         }
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 
     @Bean
@@ -77,21 +80,14 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware 
     }
 
     @Bean
-    public SelectorFactory selectorFactory() {
-        return new SelectorFactory(this.selectors);
-    }
-
-    @Bean
     public OperationLogTemplate operationLogTemplate() {
-        OperationLogTemplate operationLogTemplate = new OperationLogTemplate(opLogProperties.getTenant());
+        OperationLogTemplate operationLogTemplate = new OperationLogTemplate(opLogProperties.getTenant(), applicationContext);
         OperatorService operatorService = operatorService();
         LogRecordPersistenceService logRecordPersistenceService = logRecordPersistenceService();
         OperationResultAnalyzerService operationResultAnalyzerService = operationResultAnalyzerService();
-        SelectorFactory selectorFactory = selectorFactory();
         operationLogTemplate.setOperatorService(operatorService);
         operationLogTemplate.setLogRecordPersistenceService(logRecordPersistenceService);
         operationLogTemplate.setOperationResultAnalyzerService(operationResultAnalyzerService);
-        operationLogTemplate.setSelectorFactory(selectorFactory);
         return operationLogTemplate;
     }
 

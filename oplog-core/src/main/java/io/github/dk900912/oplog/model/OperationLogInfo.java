@@ -1,11 +1,13 @@
 package io.github.dk900912.oplog.model;
 
+import io.github.dk900912.oplog.annotation.DiffSelector;
+
 import java.util.Map;
 
 import static io.github.dk900912.oplog.constant.Constants.BIZ_CATEGORY;
 import static io.github.dk900912.oplog.constant.Constants.BIZ_NO;
 import static io.github.dk900912.oplog.constant.Constants.BIZ_TARGET;
-import static io.github.dk900912.oplog.constant.Constants.SELECTOR_NAME;
+import static io.github.dk900912.oplog.constant.Constants.DIFF_SELECTOR;
 
 /**
  * @author dukui
@@ -18,19 +20,19 @@ public class OperationLogInfo {
 
     private String originBizNo;
 
-    private String selectorName;
+    private DiffSelector originDiffSelector;
 
     public OperationLogInfo(Map<String, Object> operationLogAnnotationAttrMap) {
         this.bizCategory = (BizCategory) operationLogAnnotationAttrMap.get(BIZ_CATEGORY);
         this.originBizTarget = (String) operationLogAnnotationAttrMap.get(BIZ_TARGET);
         this.originBizNo = (String) operationLogAnnotationAttrMap.get(BIZ_NO);
-        this.selectorName = (String) operationLogAnnotationAttrMap.get(SELECTOR_NAME);
+        this.originDiffSelector = (DiffSelector) operationLogAnnotationAttrMap.get(DIFF_SELECTOR);
     }
 
-    public OperationLogInfo(BizCategory bizCategory, String originBizNo, String selectorName) {
+    public OperationLogInfo(BizCategory bizCategory, String originBizNo, DiffSelector originDiffSelector) {
         this.bizCategory = bizCategory;
         this.originBizNo = originBizNo;
-        this.selectorName = selectorName;
+        this.originDiffSelector = originDiffSelector;
     }
 
     public BizCategory getBizCategory() {
@@ -57,12 +59,12 @@ public class OperationLogInfo {
         this.originBizNo = originBizNo;
     }
 
-    public String getSelectorName() {
-        return selectorName;
+    public DiffSelector getOriginDiffSelector() {
+        return originDiffSelector;
     }
 
-    public void setSelectorName(String selectorName) {
-        this.selectorName = selectorName;
+    public void setOriginDiffSelector(DiffSelector originDiffSelector) {
+        this.originDiffSelector = originDiffSelector;
     }
 
 }

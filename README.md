@@ -16,7 +16,7 @@
 <dependency>
 	<groupId>io.github.dk900912</groupId>
 	<artifactId>oplog-spring-boot-starter</artifactId>
-	<version>1.3</version>
+	<version>1.4</version>
 </dependency>
 ```
 #### 声明式风格
@@ -38,7 +38,8 @@ public class DemoController {
         return AppResult.success().data(orderReq);
     }
 
-    @OperationLog(bizCategory = BizCategory.UPDATE, bizTarget = "订单", bizNo = "#orderReq.orderId")
+    @OperationLog(bizCategory = BizCategory.UPDATE, bizTarget = "订单", bizNo = "#orderReq.orderId", 
+            diffSelector = @DiffSelector(bean = "orderService", method = "findOrderById", param = "#orderReq.orderId"))
     @PutMapping(path = "/update")
     public AppResult update(@RequestBody OrderReq orderReq) {
         return AppResult.success();

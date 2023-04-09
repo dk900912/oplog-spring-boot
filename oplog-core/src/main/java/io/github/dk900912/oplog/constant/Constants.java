@@ -13,7 +13,7 @@ public final class Constants {
 
     public static final String BIZ_NO = "bizNo";
 
-    public static final String SELECTOR_NAME = "selectorName";
+    public static final String DIFF_SELECTOR = "diffSelector";
 
     public static final String SPRING_EL_PREFIX = "#";
 

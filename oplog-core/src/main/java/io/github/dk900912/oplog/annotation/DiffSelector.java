@@ -1,7 +1,5 @@
 package io.github.dk900912.oplog.annotation;
 
-import io.github.dk900912.oplog.model.BizCategory;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -12,29 +10,28 @@ import java.lang.annotation.Target;
 /**
  * @author dukui
  */
-@Target(ElementType.METHOD)
+@Target(ElementType.ANNOTATION_TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-public @interface OperationLog {
+public @interface DiffSelector {
 
     /**
-     * @return business operation category
+     * @return singleton bean name
      */
-    BizCategory bizCategory();
+    String bean() default "";
 
     /**
-     * @return business operation target
+     * e.g. findUserById
+     *
+     * @return diff-selector's method name
      */
-    String bizTarget();
+    String method() default "";
 
     /**
-     * @return business operation identifier
+     * e.g. #userModifyReq.userId
+     *
+     * @return the para of method()
      */
-    String bizNo();
-
-    /**
-     * @return diff selector
-     */
-    DiffSelector diffSelector() default @DiffSelector;
+    String param() default "";
 }

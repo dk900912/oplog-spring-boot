@@ -1,5 +1,8 @@
 package io.github.dk900912.oplog.context;
 
+/**
+ * @author dukui
+ */
 public class ThreadLocalOperationLogContextImplStrategy implements OperationLogContextImplStrategy {
 
     private static final ThreadLocal<OperationLogContext> CONTEXT = new ThreadLocal<>();

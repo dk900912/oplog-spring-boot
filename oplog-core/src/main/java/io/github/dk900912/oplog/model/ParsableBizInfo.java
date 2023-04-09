@@ -11,9 +11,9 @@ public class ParsableBizInfo {
 
     private Object result;
 
-    private String originParsableTarget;
+    private Object originParsableTarget;
 
-    public ParsableBizInfo(MethodInvocation methodInvocation, Object result, String originParsableTarget) {
+    public ParsableBizInfo(MethodInvocation methodInvocation, Object result, Object originParsableTarget) {
         this.methodInvocation = methodInvocation;
         this.result = result;
         this.originParsableTarget = originParsableTarget;
@@ -35,11 +35,11 @@ public class ParsableBizInfo {
         this.result = result;
     }
 
-    public String getOriginParsableTarget() {
+    public Object getOriginParsableTarget() {
         return originParsableTarget;
     }
 
-    public void setOriginParsableTarget(String originParsableTarget) {
+    public void setOriginParsableTarget(Object originParsableTarget) {
         this.originParsableTarget = originParsableTarget;
     }
 }

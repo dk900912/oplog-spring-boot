@@ -18,7 +18,7 @@ public abstract class SimpleOperationLogCallback<T, E extends Throwable> impleme
 
     protected String bizNo;
 
-    protected String selectorName;
+    private Object previousContent;
 
     protected Object currentContent;
 
@@ -28,9 +28,9 @@ public abstract class SimpleOperationLogCallback<T, E extends Throwable> impleme
         this.bizNo = bizNo;
     }
 
-    public SimpleOperationLogCallback(BizCategory bizCategory, String bizTarget, String bizNo, String selectorName, Object currentContent) {
+    public SimpleOperationLogCallback(BizCategory bizCategory, String bizTarget, String bizNo, Object previousContent, Object currentContent) {
         this(bizCategory, bizTarget, bizNo);
-        this.selectorName = selectorName;
+        this.previousContent = previousContent;
         this.currentContent = currentContent;
     }
 
@@ -46,8 +46,8 @@ public abstract class SimpleOperationLogCallback<T, E extends Throwable> impleme
         return bizNo;
     }
 
-    public final String getSelectorName() {
-        return selectorName;
+    public Object getPreviousContent() {
+        return previousContent;
     }
 
     public final Object getCurrentContent() {
