@@ -7,7 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.expression.MethodBasedEvaluationContext;
-import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
+import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -32,8 +32,8 @@ public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
     /**
      * thread-safe
      */
-    private static final LocalVariableTableParameterNameDiscoverer parameterNameDiscoverer =
-            new LocalVariableTableParameterNameDiscoverer();
+    private static final StandardReflectionParameterNameDiscoverer parameterNameDiscoverer =
+            new StandardReflectionParameterNameDiscoverer();
 
     /**
      * thread-safe

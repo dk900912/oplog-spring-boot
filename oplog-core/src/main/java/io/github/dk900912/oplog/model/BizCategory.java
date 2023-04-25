@@ -31,7 +31,21 @@ public enum BizCategory {
 
     ACTIVATE("激活"),
 
-    FREEZE("冻结");
+    FREEZE("冻结"),
+
+    IMPORT("导入"),
+
+    EXPORT("导出"),
+
+    LOGIN("登录"),
+
+    LOGOUT("登出"),
+
+    REGISTER("注册"),
+
+    AUTHENTICATE("认证"),
+
+    AUTHORIZE("授权");
 
     /**
      * The description of each enumeration instance.

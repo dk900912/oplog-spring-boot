@@ -11,12 +11,12 @@
 </p>
 
 ## 如何使用
-本组件已经发布到 maven 中央仓库，大家可以体验一下。GAV信息如下：
+本组件已经发布到 maven 中央仓库，大家可以体验一下。目前建议大家使用 1.4 和 1.4.1 版本，其中 1.4.1 版本需要 Spring Boot 3.0+、JDK 17+ 哈。GAV信息如下：
 ```xml
 <dependency>
 	<groupId>io.github.dk900912</groupId>
 	<artifactId>oplog-spring-boot-starter</artifactId>
-	<version>1.4</version>
+	<version>1.4.1</version>
 </dependency>
 ```
 #### 声明式风格
