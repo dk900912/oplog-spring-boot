@@ -2,7 +2,6 @@
 <a href="https://openjdk.java.net/"><img src="https://img.shields.io/badge/Java-8+-green?logo=java&logoColor=white" alt="Java support"></a>
 <a href="https://www.apache.org/licenses/LICENSE-2.0.html"><img src="https://img.shields.io/github/license/dk900912/oplog-spring-boot?color=4D7A97&logo=apache" alt="License"></a>
 <a href="https://search.maven.org/search?q=a:oplog-spring-boot-starter"><img src="https://img.shields.io/maven-central/v/io.github.dk900912/oplog-spring-boot-starter?logo=apache-maven" alt="Maven Central"></a>
-<a href="https://github.com/dk900912/oplog-spring-boot/releases"><img src="https://img.shields.io/github/release/dk900912/oplog-spring-boot.svg" alt="GitHub release"></a>
 <a href="https://github.com/dk900912/oplog-spring-boot/stargazers"><img src="https://img.shields.io/github/stars/dk900912/oplog-spring-boot" alt="GitHub Stars"></a>
 <a href="https://github.com/dk900912/oplog-spring-boot/fork"><img src="https://img.shields.io/github/forks/dk900912/oplog-spring-boot" alt="GitHub Forks"></a>
 <a href="https://github.com/dk900912/oplog-spring-boot/issues"><img src="https://img.shields.io/github/issues/dk900912/oplog-spring-boot" alt="GitHub issues"></a>
@@ -62,7 +61,26 @@ operationLogRemplate.execute(
             }
         });
 ```
-> 如果业务方法A调用了业务方法B，且A和B这俩方法都由@OperationLog标记，那么B方法中并不会记录操作日志，这是Spring AOP的老问题了，官方也提供了解决方法，比如使用`AopContext.currentProxy()`。
+
+## 进阶
+
+1. 支持多租户，其实一个租户往往就是一个特定服务，比如：订单服务。租户信息可以通过`spring.oplog.tenant`配置项来指定。
+
+
+2. 为什么要为 <b>OperationLogPointcutAdvisor</b> 设定 order 属性呢？或者说为什么对外提供`spring.oplog.advisor.order`配置项呢？OperationLog 注解并不局限于 Controller 层面，也可以将其用于 Service 中的业务方法。但无论用于哪一层级，往往需要定制 Advisor 的顺序。比如：当  OperationLog 注解应用于一个
+Transactional 业务方法上，那就一定要确保 `OperationLogPointcutAdvisor` 优先级高于 `BeanFactoryTransactionAttributeSourceAdvisor`，否则 OperationLogPointcutAdvisor 中的切面逻辑（持久化、RPC调用等）会拉长整个事务，这是要避免的。
+
+
+3. 在同一个类中，如果业务方法 A 调用了业务方法 B，且 A 和 B 这俩方法都由 @OperationLog 标记，那么 B 方法中并不会记录操作日志，这是 Spring AOP 的老问题了，官方也提供了解决方法，比如使用`AopContext.currentProxy()`。
+
+
+4. 在不同的类中，如果类 A 中方法 m1 调用了 类 B 中方法 m2，且 m1 与 m2 均由 @OperationLog 标记，那么在解析 **bizNo** 的过程中会不会串了呢？不会。
+
+
+## 后续开发计划
+
+目前，还差一个对象间的 diff 功能，目前只能由大家自行 diff 了，下半年会补上这一功能。
+
 ## 如何屏蔽
 一旦引入起步依赖组件，那么将自动开启日志记录功能。除了移除依赖包之外，还可以在`application.properties`中追加以下配置来实现屏蔽目的：
 ```
