@@ -18,23 +18,17 @@ import java.lang.annotation.Target;
 @Documented
 public @interface OperationLog {
 
-    /**
-     * @return business operation category
-     */
     BizCategory bizCategory();
 
-    /**
-     * @return business operation target
-     */
     String bizTarget();
 
-    /**
-     * @return business operation identifier
-     */
     String bizNo();
 
     /**
-     * @return diff selector
+     * see {@link io.github.dk900912.oplog.support.diff.DiffSelectorMethod}
+     * <p>
+     * e.g. "xxx.VpcService#findVpcById(Long)"
      */
-    DiffSelector diffSelector() default @DiffSelector;
+    String diffSelector() default "";
+
 }

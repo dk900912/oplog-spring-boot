@@ -1,8 +1,8 @@
 package io.github.dk900912.oplog.autoconfigure;
 
-import io.github.dk900912.oplog.advisor.OperationLogPointcutAdvisor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.core.Ordered;
 
 /**
  * @author dukui
@@ -12,16 +12,10 @@ public class OpLogProperties {
 
     public static final String OPLOG_PREFIX = "spring.oplog";
 
-    /**
-     * Whether oplog component enabled, default true.
-     */
     private Boolean enabled = true;
 
-    /**
-     * {@link OperationLogPointcutAdvisor} priority
-     */
     @NestedConfigurationProperty
-    private Advisor advisor;
+    private Advisor advisor = new Advisor();
 
     /**
      * multi-tenant
@@ -56,7 +50,7 @@ public class OpLogProperties {
         /**
          * Indicate the order of operation-log advisor
          */
-        private Integer order;
+        private Integer order = Ordered.LOWEST_PRECEDENCE;
 
         public Integer getOrder() {
             return order;

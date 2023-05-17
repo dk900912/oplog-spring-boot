@@ -5,7 +5,7 @@
     <parent>
         <artifactId>oplog-spring-boot</artifactId>
         <groupId>io.github.dk900912</groupId>
-        <version>1.4.1</version>
+        <version>1.4.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -28,6 +28,10 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.danielbechler</groupId>
+            <artifactId>java-object-diff</artifactId>
         </dependency>
     </dependencies>
 </project>

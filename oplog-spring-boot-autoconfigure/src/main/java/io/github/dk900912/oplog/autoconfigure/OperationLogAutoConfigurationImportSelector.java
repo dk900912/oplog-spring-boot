@@ -10,39 +10,45 @@ import io.github.dk900912.oplog.service.impl.DefaultLogRecordPersistenceServiceI
 import io.github.dk900912.oplog.service.impl.DefaultOperationResultAnalyzerServiceImpl;
 import io.github.dk900912.oplog.service.impl.DefaultOperatorServiceImpl;
 import io.github.dk900912.oplog.support.OperationLogTemplate;
-import org.springframework.beans.BeansException;
+import io.github.dk900912.oplog.support.diff.DiffSelectorSupport;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
 import org.springframework.context.annotation.Role;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.type.AnnotationMetadata;
 
 import java.util.Objects;
-import java.util.Optional;
+
+import static io.github.dk900912.oplog.constant.Constants.ORDER;
+import static io.github.dk900912.oplog.constant.Constants.TENANT;
 
 /**
  * @author dukui
  */
-@Configuration(proxyBeanMethods = true)
-@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-public class OperationLogAutoConfigurationImportSelector implements ImportAware, ApplicationContextAware {
+@Configuration(proxyBeanMethods = false)
+public class OperationLogAutoConfigurationImportSelector implements ImportAware {
 
-    protected AnnotationAttributes enableOperationLog;
+    private AnnotationAttributes enableOperationLog;
 
-    protected ApplicationContext applicationContext;
-
-    private final OpLogProperties opLogProperties;
+    /*
+        When the automatic configuration feature is disabled through 'spring.oplog.enabled=false',
+        the operation log component is enabled through the @EnableOperationLog annotation,
+        if OpLogProperties is not wrapped by ObjectProvider, an exception will be thrown during
+        the startup phase: Parameter 0 of constructor in OperationLogAutoConfigurationImportSelector
+        required a bean of type 'OpLogProperties' that could not be found.
+     */
+    private final ObjectProvider<OpLogProperties> opLogProperties;
 
     @Autowired
-    public OperationLogAutoConfigurationImportSelector(OpLogProperties opLogProperties) {
+    public OperationLogAutoConfigurationImportSelector(ObjectProvider<OpLogProperties> opLogProperties) {
         this.opLogProperties = opLogProperties;
     }
 
@@ -54,11 +60,6 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware,
             throw new IllegalArgumentException(
                     "@EnableOperationLog is not present on importing class " + importMetadata.getClassName());
         }
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 
     @Bean
@@ -80,11 +81,12 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware,
     }
 
     @Bean
-    public OperationLogTemplate operationLogTemplate() {
-        OperationLogTemplate operationLogTemplate = new OperationLogTemplate(opLogProperties.getTenant(), applicationContext);
-        OperatorService operatorService = operatorService();
-        LogRecordPersistenceService logRecordPersistenceService = logRecordPersistenceService();
-        OperationResultAnalyzerService operationResultAnalyzerService = operationResultAnalyzerService();
+    public OperationLogTemplate operationLogTemplate(@Qualifier("operationLogConversionService") ConversionService operationLogConversionService,
+                                                     OperatorService operatorService,
+                                                     LogRecordPersistenceService logRecordPersistenceService,
+                                                     OperationResultAnalyzerService operationResultAnalyzerService) {
+        String tenant = selectTenant();
+        OperationLogTemplate operationLogTemplate = new OperationLogTemplate(tenant, operationLogConversionService);
         operationLogTemplate.setOperatorService(operatorService);
         operationLogTemplate.setLogRecordPersistenceService(logRecordPersistenceService);
         operationLogTemplate.setOperationResultAnalyzerService(operationResultAnalyzerService);
@@ -93,27 +95,38 @@ public class OperationLogAutoConfigurationImportSelector implements ImportAware,
 
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    public OperationLogPointcutAdvisor operationLogPointcutAdvisor() {
-
+    public OperationLogPointcutAdvisor operationLogPointcutAdvisor(OperationLogTemplate operationLogTemplate) {
         OperationLogPointcutAdvisor operationLogPointcutAdvisor = new OperationLogPointcutAdvisor();
-
         OperationLogPointcut operationLogPointcut = new OperationLogPointcut();
         operationLogPointcutAdvisor.setPointcut(operationLogPointcut);
-        operationLogPointcutAdvisor.setAdvice(new OperationLogInterceptor(operationLogTemplate()));
-
-        Integer logPointcutAdvisorOrderFromAnnotation = Optional.<AnnotationAttributes>ofNullable(this.enableOperationLog)
-                .map(annotationAttributes -> annotationAttributes.<Integer>getNumber("order"))
-                .orElse(Ordered.LOWEST_PRECEDENCE);
-        Integer logPointcutAdvisorOrderFromProperty = Optional.<OpLogProperties>ofNullable(opLogProperties)
-                .map(OpLogProperties::getAdvisor)
-                .map(OpLogProperties.Advisor::getOrder)
-                .orElse(null);
-        if (Objects.nonNull(logPointcutAdvisorOrderFromProperty)) {
-            operationLogPointcutAdvisor.setOrder(logPointcutAdvisorOrderFromProperty);
-        } else {
-            operationLogPointcutAdvisor.setOrder(logPointcutAdvisorOrderFromAnnotation);
-        }
-
+        operationLogPointcutAdvisor.setAdvice(new OperationLogInterceptor(operationLogTemplate));
+        operationLogPointcutAdvisor.setOrder(selectOrder());
         return operationLogPointcutAdvisor;
+    }
+
+    @Bean
+    public ConversionService operationLogConversionService() {
+        return new DefaultConversionService();
+    }
+
+    @Bean
+    public DiffSelectorSupport diffSelectorSupport() {
+        return new DiffSelectorSupport();
+    }
+
+    @SuppressWarnings("null")
+    private String selectTenant() {
+        if (Objects.isNull(this.opLogProperties.getIfAvailable())) {
+            return this.enableOperationLog.getString(TENANT);
+        }
+        return this.opLogProperties.getIfAvailable().getTenant();
+    }
+
+    @SuppressWarnings("null")
+    private Integer selectOrder() {
+        if (Objects.isNull(this.opLogProperties.getIfAvailable())) {
+            return this.enableOperationLog.getNumber(ORDER);
+        }
+        return this.opLogProperties.getIfAvailable().getAdvisor().getOrder();
     }
 }

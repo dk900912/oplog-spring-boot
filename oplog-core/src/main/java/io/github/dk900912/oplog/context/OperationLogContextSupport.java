@@ -28,7 +28,7 @@ public final class OperationLogContextSupport extends AttributeAccessorSupport i
                 .add("id='" + hashCode() + "'")
                 .add("parent='" + (Objects.isNull(this.getParent()) ? 0 : this.getParent().hashCode()) + "'");
         for (String attributeName : attributeNames()) {
-            if (LOG_RECORD.equals(attributeName)) {
+            if (PREVIOUS_CONTENT.equals(attributeName)) {
                 continue;
             }
             Object attributeValue = getAttribute(attributeName);

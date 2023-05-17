@@ -5,6 +5,8 @@ import io.github.dk900912.oplog.model.BizCategory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.UnaryOperator;
+
 /**
  * @author dukui
  */
@@ -16,22 +18,19 @@ public abstract class SimpleOperationLogCallback<T, E extends Throwable> impleme
 
     protected String bizTarget;
 
-    protected String bizNo;
+    protected Object bizNo;
 
-    private Object previousContent;
+    private UnaryOperator<Object> diffSelector;
 
-    protected Object currentContent;
-
-    public SimpleOperationLogCallback(BizCategory bizCategory, String bizTarget, String bizNo) {
+    protected SimpleOperationLogCallback(BizCategory bizCategory, String bizTarget, Object bizNo) {
         this.bizCategory = bizCategory;
         this.bizTarget = bizTarget;
         this.bizNo = bizNo;
     }
 
-    public SimpleOperationLogCallback(BizCategory bizCategory, String bizTarget, String bizNo, Object previousContent, Object currentContent) {
+    protected SimpleOperationLogCallback(BizCategory bizCategory, String bizTarget, Object bizNo, UnaryOperator<Object> diffSelector) {
         this(bizCategory, bizTarget, bizNo);
-        this.previousContent = previousContent;
-        this.currentContent = currentContent;
+        this.diffSelector = diffSelector;
     }
 
     public final BizCategory getBizCategory() {
@@ -42,24 +41,22 @@ public abstract class SimpleOperationLogCallback<T, E extends Throwable> impleme
         return bizTarget;
     }
 
-    public final String getBizNo() {
+    public final Object getBizNo() {
         return bizNo;
     }
 
-    public Object getPreviousContent() {
-        return previousContent;
-    }
-
-    public final Object getCurrentContent() {
-        return currentContent;
+    public UnaryOperator<Object> getDiffSelector() {
+        return diffSelector;
     }
 
     @Override
     public final T doWithOperationLog(OperationLogContext context) throws E {
-        logger.info("0={======> {} <======}=0", context);
+        if (logger.isDebugEnabled()) {
+            logger.debug("0={======> {} <======}=0", context);
+        }
         return doBizAction();
     }
 
-    public abstract T doBizAction();
+    protected abstract T doBizAction();
 
 }

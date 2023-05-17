@@ -7,7 +7,7 @@
     <groupId>io.github.dk900912</groupId>
     <artifactId>oplog-spring-boot</artifactId>
     <packaging>pom</packaging>
-    <version>1.4.1</version>
+    <version>1.4.2</version>
 
     <name>oplog-spring-boot</name>
     <description>spring boot support for operation log</description>
@@ -42,11 +42,12 @@
 
     <properties>
         <oplog.version>${project.version}</oplog.version>
-        <spring-boot.version>3.0.6</spring-boot.version>
-        <spring.version>6.0.8</spring.version>
+        <spring-boot.version>3.1.1</spring-boot.version>
+        <spring.version>6.0.10</spring.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <slf4j.version>2.0.7</slf4j.version>
+        <java-object-diff.version>0.95</java-object-diff.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <java.version>17</java.version>
@@ -97,6 +98,11 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.danielbechler</groupId>
+                <artifactId>java-object-diff</artifactId>
+                <version>${java-object-diff.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

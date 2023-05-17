@@ -1,13 +1,9 @@
 package io.github.dk900912.oplog.model;
 
-import io.github.dk900912.oplog.annotation.DiffSelector;
+import org.springframework.lang.Nullable;
 
-import java.util.Map;
-
-import static io.github.dk900912.oplog.constant.Constants.BIZ_CATEGORY;
-import static io.github.dk900912.oplog.constant.Constants.BIZ_NO;
-import static io.github.dk900912.oplog.constant.Constants.BIZ_TARGET;
-import static io.github.dk900912.oplog.constant.Constants.DIFF_SELECTOR;
+import java.util.StringJoiner;
+import java.util.function.UnaryOperator;
 
 /**
  * @author dukui
@@ -16,23 +12,21 @@ public class OperationLogInfo {
 
     private BizCategory bizCategory;
 
-    private String originBizTarget;
+    private String bizTarget;
 
-    private String originBizNo;
+    private Object bizNo;
 
-    private DiffSelector originDiffSelector;
+    /**
+     * <li> In the declarative annotation scenario, DiffSelector is represented by String.
+     * <li> In programmatic scenarios, DiffSelector is represented by {@link UnaryOperator<Object>}.
+     */
+    private Object diffSelector;
 
-    public OperationLogInfo(Map<String, Object> operationLogAnnotationAttrMap) {
-        this.bizCategory = (BizCategory) operationLogAnnotationAttrMap.get(BIZ_CATEGORY);
-        this.originBizTarget = (String) operationLogAnnotationAttrMap.get(BIZ_TARGET);
-        this.originBizNo = (String) operationLogAnnotationAttrMap.get(BIZ_NO);
-        this.originDiffSelector = (DiffSelector) operationLogAnnotationAttrMap.get(DIFF_SELECTOR);
-    }
-
-    public OperationLogInfo(BizCategory bizCategory, String originBizNo, DiffSelector originDiffSelector) {
+    public OperationLogInfo(BizCategory bizCategory, String bizTarget, Object bizNo, @Nullable Object diffSelector) {
         this.bizCategory = bizCategory;
-        this.originBizNo = originBizNo;
-        this.originDiffSelector = originDiffSelector;
+        this.bizTarget = bizTarget;
+        this.bizNo = bizNo;
+        this.diffSelector = diffSelector;
     }
 
     public BizCategory getBizCategory() {
@@ -43,28 +37,37 @@ public class OperationLogInfo {
         this.bizCategory = bizCategory;
     }
 
-    public String getOriginBizTarget() {
-        return originBizTarget;
+    public String getBizTarget() {
+        return bizTarget;
     }
 
-    public void setOriginBizTarget(String originBizTarget) {
-        this.originBizTarget = originBizTarget;
+    public void setBizTarget(String bizTarget) {
+        this.bizTarget = bizTarget;
     }
 
-    public String getOriginBizNo() {
-        return originBizNo;
+    public Object getBizNo() {
+        return bizNo;
     }
 
-    public void setOriginBizNo(String originBizNo) {
-        this.originBizNo = originBizNo;
+    public void setBizNo(Object bizNo) {
+        this.bizNo = bizNo;
     }
 
-    public DiffSelector getOriginDiffSelector() {
-        return originDiffSelector;
+    public Object getDiffSelector() {
+        return diffSelector;
     }
 
-    public void setOriginDiffSelector(DiffSelector originDiffSelector) {
-        this.originDiffSelector = originDiffSelector;
+    public void setDiffSelector(Object diffSelector) {
+        this.diffSelector = diffSelector;
     }
 
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", "{", "}")
+                .add("bizCategory=" + bizCategory)
+                .add("bizTarget=" + bizTarget)
+                .add("bizNo=" + bizNo)
+                .add("diffSelector=" + diffSelector)
+                .toString();
+    }
 }

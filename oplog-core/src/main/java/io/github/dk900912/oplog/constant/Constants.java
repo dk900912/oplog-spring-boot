@@ -23,4 +23,8 @@ public final class Constants {
 
     public static final String CONTEXT_STRATEGY_SYSTEM_PROPERTY = "spring.oplog.context.strategy";
 
+    public static final String TENANT = "tenant";
+
+    public static final String ORDER = "order";
+
 }

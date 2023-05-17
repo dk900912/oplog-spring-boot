@@ -41,14 +41,16 @@ public enum BizCategory {
 
     LOGOUT("登出"),
 
-    REGISTER("注册"),
+    REGISTER_ACCOUNT("注册账号"),
+
+    CANCEL_ACCOUNT("注销账号"),
 
     AUTHENTICATE("认证"),
 
     AUTHORIZE("授权");
 
     /**
-     * The description of each enumeration instance.
+     * Detailed description of the enumeration instance.
      */
     private final String description;
 

@@ -1,6 +1,5 @@
 package io.github.dk900912.oplog.parser;
 
-import io.github.dk900912.oplog.annotation.DiffSelector;
 import io.github.dk900912.oplog.model.ParsableBizInfo;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang3.StringUtils;
@@ -15,14 +14,11 @@ import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 import java.lang.reflect.Method;
-import java.util.Objects;
 import java.util.Optional;
 
 import static io.github.dk900912.oplog.constant.Constants.SPRING_EL_PREFIX;
 
 /**
- * Parsing biz-no, biz-target and diff-selector which implemented by spring expression language.
- *
  * @author dukui
  */
 public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
@@ -43,20 +39,11 @@ public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
     @Override
     public Object parse(ParsableBizInfo parsableBizInfo) {
         final Object result = parsableBizInfo.getResult();
-        String originParsableTarget = null;
-        if (parsableBizInfo.getOriginParsableTarget() instanceof String) {
-            originParsableTarget = (String) parsableBizInfo.getOriginParsableTarget();
-        } else if (parsableBizInfo.getOriginParsableTarget() instanceof DiffSelector) {
-            DiffSelector diffSelector = (DiffSelector) parsableBizInfo.getOriginParsableTarget();
-            originParsableTarget = buildParsableDiffSelector(diffSelector);
-        } else {
-            // Illegal parsable type
-            return null;
-        }
+        final String originParsableTarget = (String) parsableBizInfo.getOriginParsableTarget();
         final MethodInvocation methodInvocation = parsableBizInfo.getMethodInvocation();
         final Method method = methodInvocation.getMethod();
         final Object[] arguments = methodInvocation.getArguments();
-        if (StringUtils.isEmpty(originParsableTarget) || !originParsableTarget.contains(SPRING_EL_PREFIX)) {
+        if (!shouldParse(originParsableTarget)) {
             return originParsableTarget;
         }
 
@@ -76,18 +63,12 @@ public class BizAttributeBasedSpExprParser implements Parser<ParsableBizInfo> {
             Expression expression = expressionParser.parseExpression(originParsableTarget);
             attribute = expression.getValue(methodBasedEvaluationContext, String.class);
         } catch (ParseException | EvaluationException e) {
-            logger.warn("An error happened while parsing biz-target, biz-no or diff-selector.");
+            logger.warn("An error happened while parsing biz-target or biz-no.");
         }
         return attribute;
     }
 
-    private String buildParsableDiffSelector(DiffSelector diffSelector) {
-        if (Objects.isNull(diffSelector) || StringUtils.isBlank(diffSelector.bean())
-                || StringUtils.isBlank(diffSelector.method()) || StringUtils.isBlank(diffSelector.param())) {
-            return null;
-        }
-        return "'" + diffSelector.bean() + "_'+'" +
-                diffSelector.method() + "_'+" +
-                diffSelector.param();
+    private boolean shouldParse(String originParsableTarget) {
+        return StringUtils.isNotEmpty(originParsableTarget) && originParsableTarget.contains(SPRING_EL_PREFIX);
     }
 }

@@ -29,7 +29,9 @@ public final class OperationLogInterceptor implements MethodInterceptor {
                 new MethodInvocationOperationLogCallback<Object, Throwable>(invocation) {
                     @Override
                     public Object doWithOperationLog(OperationLogContext context) throws Throwable {
-                        logger.info("0={======> {} <======}=0", context);
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("0={======> {} <======}=0", context);
+                        }
                         return invocation.proceed();
                     }
                 };

@@ -1,6 +1,7 @@
 package io.github.dk900912.oplog.model;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.StringJoiner;
 
 /**
@@ -53,6 +54,8 @@ public class LogRecord {
     private Object previousContent;
 
     private Object currentContent;
+
+    private Map<String, Map<String, Object>> contentDiff;
 
     public String getOperationLogId() {
         return operationLogId;
@@ -180,6 +183,14 @@ public class LogRecord {
         return this;
     }
 
+    public Map<String, Map<String, Object>> getContentDiff() {
+        return contentDiff;
+    }
+
+    public void setContentDiff(Map<String, Map<String, Object>> contentDiff) {
+        this.contentDiff = contentDiff;
+    }
+
     @Override
     public String toString() {
         return new StringJoiner(", ", "[", "]")
@@ -231,6 +242,8 @@ public class LogRecord {
         private Object previousContent;
 
         private Object currentContent;
+
+        private Map<String, Map<String, Object>> contentDiff;
 
         private LogRecordBuilder() {
         }
@@ -305,6 +318,11 @@ public class LogRecord {
             return this;
         }
 
+        public LogRecordBuilder withContentDiff(Map<String, Map<String, Object>> contentDiff) {
+            this.contentDiff = contentDiff;
+            return this;
+        }
+
         public LogRecord build() {
             LogRecord logRecord = new LogRecord();
             logRecord.setOperationLogId(operationLogId);
@@ -321,6 +339,7 @@ public class LogRecord {
             logRecord.setTargetExecutionTime(targetExecutionTime);
             logRecord.setPreviousContent(previousContent);
             logRecord.setCurrentContent(currentContent);
+            logRecord.setContentDiff(contentDiff);
             return logRecord;
         }
     }

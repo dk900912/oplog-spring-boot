@@ -7,7 +7,9 @@ import org.springframework.core.AttributeAccessor;
  */
 public interface OperationLogContext extends AttributeAccessor {
 
-    String LOG_RECORD = "context.log_record";
+    String OPERATION_LOG_INFO = "context.operation_log_info";
+
+    String PREVIOUS_CONTENT = "context.previous_content";
 
     OperationLogContext getParent();
 
