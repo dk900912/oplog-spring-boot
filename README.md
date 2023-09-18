@@ -66,8 +66,8 @@ operationLogTemplate.execute(simpleOperationLogCallback);
 
 1. 支持多租户，其实一个租户往往就是一个特定服务，比如：订单服务。租户信息可以通过`spring.oplog.tenant`配置项来指定。
 
-2. 为什么要为 <b>OperationLogPointcutAdvisor</b> 设定 order 属性呢？或者说为什么对外提供`spring.oplog.advisor.order`配置项呢？OperationLog 注解并不局限于 Controller 层面，也可以将其用于 Service 中的业务方法。但无论用于哪一层级，往往需要定制 Advisor 的顺序。比如：当  OperationLog 注解应用于一个
-Transactional 业务方法上，那就一定要确保 `OperationLogPointcutAdvisor` 优先级高于 `BeanFactoryTransactionAttributeSourceAdvisor`，否则 OperationLogPointcutAdvisor 中的切面逻辑（持久化、RPC调用等）会拉长整个事务，如果大家想避免这种情况，那么这里就可以自行配置。
+2. 为什么要为 <b>OperationLogPointcutAdvisor</b> 设定 order 属性呢？或者说为什么对外提供`spring.oplog.advisor.order`配置项呢？OperationLog 注解并不局限于 Controller 层面，也可以将其用于 Service 中的业务方法，无论用于哪一层级，有时需要关注 OperationLogPointcutAdvisor 的执行顺序。
+比如：当  OperationLog 注解应用于一个 Transactional 业务方法上，那也许要确保 `OperationLogPointcutAdvisor` 优先级高于 `BeanFactoryTransactionAttributeSourceAdvisor`，否则 OperationLogPointcutAdvisor 中的切面逻辑（持久化、RPC调用等）会拉长整个事务，如果大家想避免这种情况，那么这里就可以自行配置。
 
 3. 在同一个类中，如果业务方法 A 调用了业务方法 B，且 A 和 B 这俩方法都由 @OperationLog 标记，那么 B 方法中并不会记录操作日志，这是 Spring AOP 的老问题了，官方也提供了解决方法，比如使用`AopContext.currentProxy()`。
 
@@ -101,6 +101,86 @@ Transactional 业务方法上，那就一定要确保 `OperationLogPointcutAdvis
 
 8. `diff`结果在并发场景下是有可能串掉的，但这并不是本组件的 bug，应该是大家没有做好“对共享资源的互斥访问”吧。
 
-9. 在运行过程中，可能会提示若干条日志，如：`Bean 'operationLogTemplate' of type [io.github.dk900912.oplog.support.OperationLogTemplate] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)` 。大家不用慌张，直接忽略就好了，因为本组件声明的 Bean 并不需要走一遍所有的 BPP（比如有一个比较重要的 BPP 是用来生成代理 Bean 的，本组件所声明的 Bean 同样不需要为其生成代理类）。
+9. 在运行过程中，可能会提示若干条日志，如：`Bean 'operationLogTemplate' of type [io.github.dk900912.oplog.support.OperationLogTemplate] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)` 。
+大家不用慌张，直接忽略就好了，因为本组件声明的 Bean 并不需要走一遍所有的 BPP（比如有一个比较重要的 BPP 是用来生成代理 Bean 的，本组件所声明的 Bean 同样不需要为其生成代理类）。
 
 10. 在编程式更新场景中，DiffSelector 如何指定呢？直接塞进去一个`Function`即可，比如：`bizNo -> vpcService.findVpcById((long)bizNo)`。
+
+11. `OperationLogContext`中保存了一些上下文信息，主要是围绕`@OperationLog`注解属性的一些内容，比如：`OperationLogInfo`实例和`diff-selector`查询到的`previous content`。而 OperationLogContext 实例贮存在何处呢？
+没错，就是`ThreadLocal`，本组件内置了一个实现，即`ThreadLocalOperationLogContextImplStrategy`。当然，大家也可以基于`ITL`、`TTL`来实现，这样的拓展是完全支持的，如下所示。
+```java
+public class OperationLogSynchronizationManager {
+
+	private static String strategyName = System.getProperty("spring.oplog.context.strategy");
+
+	private static OperationLogContextImplStrategy strategy;
+
+	static {
+		initialize();
+	}
+
+	private OperationLogSynchronizationManager() {}
+
+	private static void initialize() {
+		if (!StringUtils.hasText(strategyName)) {
+			strategyName = DEFAULT_CONTEXT_STRATEGY;
+		}
+
+		if (strategyName.equals(DEFAULT_CONTEXT_STRATEGY)) {
+			strategy = new ThreadLocalOperationLogContextImplStrategy();
+		} else {
+			try {
+				Class<?> clazz = Class.forName(strategyName);
+				Constructor<?> customStrategy = clazz.getConstructor();
+				strategy = (OperationLogContextImplStrategy) customStrategy.newInstance();
+			} catch (Exception ex) {
+				ReflectionUtils.handleReflectionException(ex);
+			}
+		}
+	}
+}
+```
+上面代码清晰地交代了替换`OperationLogContextImplStrategy`实现类的方式，即通过 VM Options 来追加`-Dspring.oplog.context.strategy=xxx.TtlOperationLogContextImplStrategy`。
+
+话说回来，究竟什么时候需要使用阿里的 TTL 替换 TL 呢？其实是没必要的，虽然 OperationLogContext 实例是有父 OperationLogContext 的，但目前代码中并不存在这样的逻辑：当前`子OperationLogContext`从`父OperationLogContext`中获取继承的信息。
+唯一的影响如下场景中：父子 OperationLogContext 实例的关联关系断掉了而已。
+
+```java
+@Validated
+@RestController
+@RequestMapping(path = "/customer/v1/vpc")
+public class VpcController {
+
+    @OperationLog(
+            bizCategory = BizCategory.FIND,
+            bizTarget = "HI", bizNo = "#target")
+    @GetMapping
+    public AppResult get(@RequestParam("target") String target) {
+        final VpcController o = (VpcController) AopContext.currentProxy();
+        o.delete(target);
+        return AppResult.builder().code(200).build();
+    }
+
+    @Async("customThreadPoolTaskExecutor")
+    @OperationLog(
+            bizCategory = BizCategory.DELETE,
+            bizTarget = "HI", bizNo = "#target")
+    @DeleteMapping
+    public void delete(@RequestParam("target") String target) {
+        System.out.println("deleted");
+    }
+}
+```
+DEBUG 日志如下：
+```
+2023-09-18T16:32:52.646+08:00 DEBUG 2684 --- [nio-8081-exec-1] i.g.d.o.a.a.OperationLogInterceptor      : 0={======> OperationLogContextSupport[id='1601237157', parent='0', context.operation_log_info='{bizCategory=FIND, bizTarget=HI, bizNo=999, diffSelector=}'] <======}=0
+2023-09-18T16:32:52.657+08:00 DEBUG 2684 --- [nsole_network_1] i.g.d.o.a.a.OperationLogInterceptor      : 0={======> OperationLogContextSupport[id='756422871', parent='0', context.operation_log_info='{bizCategory=DELETE, bizTarget=HI, bizNo=999, diffSelector=}'] <======}=0
+```
+
+为什么会出现这样的问题呢？customThreadPoolTaskExecutor 线程池在启动阶段就已完成了初始化，TL 就是会串掉的，TTL 也正是为了解决这一问题而诞生的。
+
+TL 替换为 TTL 后，再看 父子 OperationLogContext 实例的关联关系已经接上了：
+```
+2023-09-18T16:36:48.671+08:00 DEBUG 21304 --- [nio-8081-exec-1] i.g.d.o.a.a.OperationLogInterceptor      : 0={======> OperationLogContextSupport[id='554254994', parent='0', context.operation_log_info='{bizCategory=FIND, bizTarget=HI, bizNo=999, diffSelector=}'] <======}=0
+2023-09-18T16:36:48.685+08:00 DEBUG 21304 --- [nsole_network_1] i.g.d.o.a.a.OperationLogInterceptor      : 0={======> OperationLogContextSupport[id='995785809', parent='554254994', context.operation_log_info='{bizCategory=DELETE, bizTarget=HI, bizNo=999, diffSelector=}'] <======}=0
+```
